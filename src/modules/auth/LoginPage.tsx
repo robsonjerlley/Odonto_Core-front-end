@@ -51,7 +51,7 @@ export default function LoginPage() {
               <FormField
                 control={form.control}
                 name="username"
-                render={({ field }) => (
+                render={({ field }: {field: React.ComponentProps<typeof Input>}) => (
                   <FormItem>
                     <FormLabel>Usuário</FormLabel>
                     <FormControl>
@@ -64,7 +64,7 @@ export default function LoginPage() {
               <FormField
                 control={form.control}
                 name="password"
-                render={({ field }) => (
+                render={({ field }: {field: React.ComponentProps<typeof Input>}) => (
                   <FormItem>
                     <FormLabel>Senha</FormLabel>
                     <FormControl>
