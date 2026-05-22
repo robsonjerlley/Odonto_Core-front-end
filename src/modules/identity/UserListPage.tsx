@@ -84,7 +84,7 @@ export default function UserListPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filtered.map((user) => (
+          {filtred.map((user) => (
             <UserRow key={user.id} user={user} onDelete={(id) => removeUser.mutate(id)} />
           ))}
         </TableBody>

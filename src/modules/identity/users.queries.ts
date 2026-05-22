@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { usersService, type CreateUserDTO, type UpdatePasswordDTO } from "./users.service"
 import type { Sector, Role } from '@/types/enums'
+import type { User } from '@/types/models'
 
 
 
@@ -8,7 +9,7 @@ import type { Sector, Role } from '@/types/enums'
 const USERS_KEY = 'users'
 
 export function useUsers() {
-    return useQuery({
+    return useQuery<User[]>({
         queryKey: [USERS_KEY],
         queryFn: usersService.findAll,
     })
@@ -16,7 +17,7 @@ export function useUsers() {
 
 
 export function useUsersBySector(sector: Sector | null) {
-    return useQuery({
+    return useQuery<User[]>({
         queryKey: [USERS_KEY, 'sector', sector],
         queryFn: () => usersService.findBySector(sector!),
         enabled: sector !== null,
@@ -25,7 +26,7 @@ export function useUsersBySector(sector: Sector | null) {
 
 
 export function useUsersBySectorAndRole(sector: Sector | null, role: Role | null) {
-    return useQuery({
+    return useQuery<User[]>({
         queryKey: [USERS_KEY, 'sector', sector, 'role', role],
         queryFn: () => usersService.findBySectorAndRole(sector!, role!),
         enabled: sector !== null && role !== null,
