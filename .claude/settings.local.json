@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx shadcn@4.6.0 add form --overwrite)",
+      "Bash(npx --yes shadcn@4.6.0 add form)"
+    ]
+  }
+}
