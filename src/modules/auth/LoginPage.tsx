@@ -22,22 +22,31 @@ export default function LoginPage() {
     })
 
     async function onSubmit(data: LoginFormData) {
-    try {
-      const response = await api.post<{ token: string }>(
-        '/api/v1/authentication/login',
-        data,
-      )
-      const userResponse = await api.get(`/api/v1/users/findByUsername/${data.username}`, {
-        headers: { Authorization: `Bearer ${response.data.token}` },
-      })
-      login(userResponse.data, response.data.token)
-      navigate('/')
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        form.setError('password', { message: 'Usuário ou senha incorretos' })
+      try {
+        const { data: authData } = await api.post<{ token: string }>(
+          '/api/v1/authentication/login',
+          data,
+        )
+
+        // Salva o token no store antes do segundo request
+        // O interceptor do Axios vai injetá-lo automaticamente
+        login(null, authData.token)
+
+        const { data: userData } = await api.get(`/api/v1/users/findByUsername/${data.username}`)
+
+        login(userData, authData.token)
+        navigate('/')
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          const status = error.response?.status
+          if (status === 401 || status === 403) {
+            form.setError('password', { message: 'Usuário ou senha incorretos' })
+          } else {
+            form.setError('password', { message: 'Erro ao conectar com o servidor' })
+          }
+        }
       }
     }
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">

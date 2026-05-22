@@ -1,5 +1,4 @@
 import { useForm } from 'react-hook-form'
-import type { ControllerRenderProps } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Sector, Role } from '@/types/enums'
 import { useCreateUser } from './users.queries'
@@ -44,7 +43,7 @@ export default function CreateUserDialog({ open, onOpenChange }: CreateUserDialo
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="name" render={({ field }: { field: ControllerRenderProps }) => (
+            <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem>
                 <FormLabel>Nome</FormLabel>
                 <FormControl><Input placeholder="João Silva" {...field} /></FormControl>
@@ -52,7 +51,7 @@ export default function CreateUserDialog({ open, onOpenChange }: CreateUserDialo
               </FormItem>
             )} />
 
-            <FormField control={form.control} name="username" render={({ field }: { field: ControllerRenderProps }) => (
+            <FormField control={form.control} name="username" render={({ field }) => (
               <FormItem>
                 <FormLabel>Usuário</FormLabel>
                 <FormControl><Input placeholder="joao.silva" {...field} /></FormControl>
@@ -60,7 +59,7 @@ export default function CreateUserDialog({ open, onOpenChange }: CreateUserDialo
               </FormItem>
             )} />
 
-            <FormField control={form.control} name="password" render={({ field }: { field: ControllerRenderProps }) => (
+            <FormField control={form.control} name="password" render={({ field }) => (
               <FormItem>
                 <FormLabel>Senha</FormLabel>
                 <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
@@ -68,7 +67,7 @@ export default function CreateUserDialog({ open, onOpenChange }: CreateUserDialo
               </FormItem>
             )} />
 
-            <FormField control={form.control} name="sector" render={({ field }: { field: ControllerRenderProps }) => (
+            <FormField control={form.control} name="sector" render={({ field }) => (
               <FormItem>
                 <FormLabel>Setor</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -85,7 +84,7 @@ export default function CreateUserDialog({ open, onOpenChange }: CreateUserDialo
               </FormItem>
             )} />
 
-            <FormField control={form.control} name="role" render={({ field }: { field: ControllerRenderProps }) => (
+            <FormField control={form.control} name="role" render={({ field }) => (
               <FormItem>
                 <FormLabel>Role</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>

@@ -5,7 +5,7 @@ import type { User } from '@/types/models'
 interface AuthState {
     user: User | null
     token: string | null
-    login: (user: User, token: string) => void
+    login: (user: User | null, token: string) => void
     logout: () => void
     isAuthenticated: () => boolean
 }
