@@ -3,6 +3,8 @@ import { useUsers, useRemoveUser } from './users.queries'
 import { Sector, Role } from '@/types/enums'
 import type { User } from '@/types/models'
 import RoleGuard from '@/modules/auth/RoleGuard'
+import CreateUserDialog from './CreateUserDialog'
+import ChangePasswordDialog from './ChangePasswordDialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
@@ -13,40 +15,33 @@ import {
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 
-
 export default function UserListPage() {
-    const { data: users = [], isLoading } = useUsers()
-    const removeUser = useRemoveUser ()
+  const { data: users = [], isLoading } = useUsers()
+  const removeUser = useRemoveUser()
 
-    const [sectorFilter, setSectorFilter] = useState<Sector | 'all'>('all')
-    const [roleFilter, setRoleFilter] = useState <Role | 'all'>('all')
+  const [sectorFilter, setSectorFilter] = useState<Sector | 'all'>('all')
+  const [roleFilter, setRoleFilter] = useState<Role | 'all'>('all')
+  const [createOpen, setCreateOpen] = useState(false)
+  const [passwordUser, setPasswordUser] = useState<User | null>(null)
 
+  const filtered = users.filter((u) => {
+    if (sectorFilter !== 'all' && u.sector !== sectorFilter) return false
+    if (roleFilter !== 'all' && u.role !== roleFilter) return false
+    return true
+  })
 
-    const filtred = users.filter((u) => {
-        if (sectorFilter !== 'all' && u.sector !== sectorFilter) {
-            return false
-        }
-        if (roleFilter !== 'all' && u.role !== roleFilter) {
-            return false
-        }    
+  if (isLoading) return <p className="p-6">Carregando...</p>
 
-        return true
-    })
-
-
-    if (isLoading) {
-        return <p className="p-6">Carregando...</p>
-    }
-    
-    return (
+  return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Usuários</h1>
         <RoleGuard allowed={[Role.ADM_SYSTEM]}>
-          <Button>Novo usuário</Button>
+          <Button onClick={() => setCreateOpen(true)}>Novo usuário</Button>
         </RoleGuard>
       </div>
-     <div className="flex gap-3">
+
+      <div className="flex gap-3">
         <Select value={sectorFilter} onValueChange={(v) => setSectorFilter(v as Sector | 'all')}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Setor" />
@@ -84,16 +79,37 @@ export default function UserListPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filtred.map((user) => (
-            <UserRow key={user.id} user={user} onDelete={(id) => removeUser.mutate(id)} />
+          {filtered.map((user) => (
+            <UserRow
+              key={user.id}
+              user={user}
+              onDelete={(id) => removeUser.mutate(id)}
+              onChangePassword={() => setPasswordUser(user)}
+            />
           ))}
         </TableBody>
       </Table>
+
+      <CreateUserDialog open={createOpen} onOpenChange={setCreateOpen} />
+
+      {passwordUser && (
+        <ChangePasswordDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) setPasswordUser(null) }}
+          username={passwordUser.username}
+        />
+      )}
     </div>
   )
 }
 
-function UserRow({ user, onDelete }: { user: User; onDelete: (id: string) => void }) {
+interface UserRowProps {
+  user: User
+  onDelete: (id: string) => void
+  onChangePassword: () => void
+}
+
+function UserRow({ user, onDelete, onChangePassword }: UserRowProps) {
   return (
     <TableRow>
       <TableCell>{user.name}</TableCell>
@@ -105,7 +121,10 @@ function UserRow({ user, onDelete }: { user: User; onDelete: (id: string) => voi
           {user.active ? 'Ativo' : 'Inativo'}
         </Badge>
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-right space-x-2">
+        <Button variant="outline" size="sm" onClick={onChangePassword}>
+          Trocar senha
+        </Button>
         <RoleGuard allowed={[Role.ADM_SYSTEM]}>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -129,6 +148,5 @@ function UserRow({ user, onDelete }: { user: User; onDelete: (id: string) => voi
         </RoleGuard>
       </TableCell>
     </TableRow>
-  )    
-
-} 
+  )
+}
