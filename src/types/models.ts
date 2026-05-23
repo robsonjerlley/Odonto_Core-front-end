@@ -72,8 +72,10 @@ export interface ContactLog {
 
 export interface DealProcedure {
     name: string
+    code?: string
+    tableValue: number
     quantity: number
-    unitPrice: number
+    note?: string
 }
 
 export interface Deal {
@@ -94,45 +96,67 @@ export interface Deal {
     updatedAt: string
 }
 
+export interface DealHistory {
+    dealId: string
+    changedBy: string
+    changedBySector: Sector
+    fieldChanged: string
+    valueBefore: string
+    valueAfter: string
+    occurredAt: string
+}
+
+export interface DealDetail {
+    deal: Deal
+    history: DealHistory[]
+}
+
 // Analytics
 
 export interface AdsRoiResultDTO {
     channel: AdsChannel
-    investment: number
-    revenue: number
-    roi: number
+    totalInvestment: number
+    totalRevenue: number
+    roiMultiplier: number
+    leadsCount: number
+    closedCount: number
 }
 
 export interface StageConversionResultDTO {
-    stage: TicketStatus
-    entered: number 
-    converted: number
-    conversionRate: number 
+    sector: Sector
+    captureCount: number
+    scheduledCount: number
+    dealCreatedCount: number
+    closedCount: number
+    leadsConversionPct: number
+    evaluationConversionPct: number
+    commercialConversionPct: number
 }
 
 export interface SectorDropOffResultDTO {
     sector: Sector
-    received: number
-    lost: number
-    dropOffRate: number
+    entryCount: number
+    exitCount: number
+    lossCount: number
+    dropOffPct: number
 }
-
 
 export interface UserPerformanceResultDTO {
     userId: string
-    username: string
+    name: string
     sector: Sector
-    wins: number
-    totalDeals: number
-    revenue: number
+    totalAssigned: number
+    totalConverted: number
+    conversionPct: number
+    avgTicketValue: number
+    calculatedBonus: number
 }
 
 export interface GlobalDashboard {
     period: DataRangeDTO
     adsRoi: AdsRoiResultDTO[]
-    stageConversion: StageConversionResultDTO[]
+    stageConversion: StageConversionResultDTO
     sectorDropOff: SectorDropOffResultDTO[]
     topPerformers: UserPerformanceResultDTO[]
-
 }
 

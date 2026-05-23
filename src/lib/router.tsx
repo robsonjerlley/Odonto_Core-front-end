@@ -5,6 +5,8 @@ import AppLayout from '@/components/AppLayout'
 import UserListPage from '@/modules/identity/UserListPage'
 import CustomerListPage from '@/modules/funnel/CustomerListPage'
 import TicketKanbanPage from '@/modules/funnel/TicketKanbanPage'
+import DealsPage from '@/modules/commercial/DealsPage'
+import DashboardPage from '@/modules/analytics/DashboardPage'
 
 export const router = createBrowserRouter([
   {
@@ -20,7 +22,7 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <div className="p-6">Dashboard — em breve</div>,
+            element: <DashboardPage />,
           },
           {
             path: 'users',
@@ -33,6 +35,10 @@ export const router = createBrowserRouter([
           {
             path: 'funnel',
             element: <TicketKanbanPage />,
+          },
+          {
+            path: 'commercial',
+            element: <DealsPage />,
           },
         ],
       },
