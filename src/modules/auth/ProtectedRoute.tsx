@@ -3,12 +3,11 @@ import { Navigate, Outlet } from 'react-router-dom'
 
 
 export default function ProtectedRoute() {
-    const isAuthenticated = useAuthStore ((state) => state.isAuthenticated)
+    const token = useAuthStore((state) => state.token)
 
-    if(!isAuthenticated()) {
+    if (!token) {
         return <Navigate to="/login" replace />
     }
 
     return <Outlet />
-
 }

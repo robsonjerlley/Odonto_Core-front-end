@@ -20,8 +20,14 @@ api.interceptors.response.use(
   (error) => {
     const isLoginEndpoint = error.config?.url?.includes('/authentication/login')
     if (error.response?.status === 401 && !isLoginEndpoint) {
-      useAuthStore.getState().logout()
-      router.navigate('/login')
+      const currentToken = useAuthStore.getState().token
+      const requestToken = (error.config?.headers?.Authorization as string | undefined)
+        ?.replace('Bearer ', '')
+      // Only logout if the request used the current token (not a stale one from before re-login)
+      if (!requestToken || requestToken === currentToken) {
+        useAuthStore.getState().logout()
+        router.navigate('/login')
+      }
     }
     return Promise.reject(error)
   },
