@@ -5,8 +5,8 @@ import type {
 } from './enums'
 
 export interface DataRangeDTO {
-    startDate: string 
-    endDate: string
+    from: string
+    to: string
 }
 
 // Identity

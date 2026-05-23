@@ -9,8 +9,8 @@ import type {
 import type { AdsChannel, Sector } from '@/types/enums'
 
 export interface AnalyticsPeriod {
-  startDate: string
-  endDate: string
+  from: string
+  to: string
 }
 
 export const analyticsService = {

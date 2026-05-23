@@ -29,8 +29,8 @@ function pct(v: number | null | undefined) {
 function defaultPeriod(): AnalyticsPeriod {
   const today = new Date()
   return {
-    startDate: format(subDays(today, 30), 'yyyy-MM-dd'),
-    endDate: format(today, 'yyyy-MM-dd'),
+    from: format(subDays(today, 30), 'yyyy-MM-dd'),
+    to: format(today, 'yyyy-MM-dd'),
   }
 }
 
@@ -42,8 +42,8 @@ interface PeriodFilterProps {
 }
 
 function PeriodFilter({ period, onApply }: PeriodFilterProps) {
-  const [start, setStart] = useState(period.startDate)
-  const [end, setEnd] = useState(period.endDate)
+  const [start, setStart] = useState(period.from)
+  const [end, setEnd] = useState(period.to)
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -64,7 +64,7 @@ function PeriodFilter({ period, onApply }: PeriodFilterProps) {
         value={end}
         onChange={(e) => setEnd(e.target.value)}
       />
-      <Button size="sm" onClick={() => onApply({ startDate: start, endDate: end })}>
+      <Button size="sm" onClick={() => onApply({ from: start, to: end })}>
         Aplicar
       </Button>
     </div>

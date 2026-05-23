@@ -4,14 +4,14 @@ import type { AdsChannel, Sector } from '@/types/enums'
 
 export function useDashboard(period: AnalyticsPeriod) {
   return useQuery({
-    queryKey: ['analytics-dashboard', period.startDate, period.endDate],
+    queryKey: ['analytics-dashboard', period.from, period.to],
     queryFn: () => analyticsService.getDashboard(period),
   })
 }
 
 export function useAdsRoi(channel: AdsChannel | '', period: AnalyticsPeriod) {
   return useQuery({
-    queryKey: ['analytics-ads-roi', channel, period.startDate, period.endDate],
+    queryKey: ['analytics-ads-roi', channel, period.from, period.to],
     queryFn: () => analyticsService.getAdsRoi(channel as AdsChannel, period),
     enabled: !!channel,
   })
@@ -19,7 +19,7 @@ export function useAdsRoi(channel: AdsChannel | '', period: AnalyticsPeriod) {
 
 export function useConversion(sector: Sector | '', period: AnalyticsPeriod) {
   return useQuery({
-    queryKey: ['analytics-conversion', sector, period.startDate, period.endDate],
+    queryKey: ['analytics-conversion', sector, period.from, period.to],
     queryFn: () => analyticsService.getConversion(sector as Sector, period),
     enabled: !!sector,
   })
@@ -27,7 +27,7 @@ export function useConversion(sector: Sector | '', period: AnalyticsPeriod) {
 
 export function useUserPerformance(userId: string, period: AnalyticsPeriod) {
   return useQuery({
-    queryKey: ['analytics-user-performance', userId, period.startDate, period.endDate],
+    queryKey: ['analytics-user-performance', userId, period.from, period.to],
     queryFn: () => analyticsService.getUserPerformance(userId, period),
     enabled: !!userId,
   })
