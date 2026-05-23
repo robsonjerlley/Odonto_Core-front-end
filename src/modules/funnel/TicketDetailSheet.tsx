@@ -93,7 +93,7 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
                               <span className="font-medium">{CONTACT_CHANNEL_LABELS[log.channel]}</span>
                             </p>
                             <p className="text-sm mt-0.5">{log.note}</p>
-                            {log.statusBefore !== log.statusAfter && (
+                            {log.statusBefore && log.statusAfter && log.statusBefore !== log.statusAfter && (
                               <p className="text-xs text-muted-foreground mt-1">
                                 {TICKET_STATUS_LABELS[log.statusBefore]} → {TICKET_STATUS_LABELS[log.statusAfter]}
                               </p>

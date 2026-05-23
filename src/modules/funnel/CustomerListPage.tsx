@@ -14,10 +14,13 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { CUSTOMER_SOURCE_LABELS } from '@/lib/labels'
+import { useHasRole } from '@/hooks/useHasRole'
+import { Role } from '@/types/enums'
 
 export default function CustomerListPage() {
   const { data: customers = [], isLoading } = useCustomers()
   const removeCustomer = useRemoveCustomer()
+  const canCreate = useHasRole(Role.ADM_SYSTEM, Role.ADM_LEADS, Role.USER_LEADS, Role.USER_ATTENDANT)
 
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -39,7 +42,7 @@ export default function CustomerListPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Clientes</h1>
-        <Button onClick={() => setDialogOpen(true)}>Novo cliente</Button>
+        {canCreate && <Button onClick={() => setDialogOpen(true)}>Novo cliente</Button>}
       </div>
 
       <Input
@@ -112,7 +115,7 @@ export default function CustomerListPage() {
         </Table>
       )}
 
-      <CreateCustomerDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      {canCreate && <CreateCustomerDialog open={dialogOpen} onOpenChange={setDialogOpen} />}
     </div>
   )
 }

@@ -1,8 +1,9 @@
-import { useForm } from 'react-hook-form'
+import { useForm, type DefaultValues } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Sector } from '@/types/enums'
 import { useCreateTicket, useCustomers } from './funnel.queries'
 import { ticketSchema, type TicketFormData } from './ticket.schema'
+import { SECTOR_LABELS } from '@/lib/labels'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Button } from '@/components/ui/button'
@@ -14,33 +15,44 @@ interface CreateTicketDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
+const DEFAULT_VALUES: DefaultValues<TicketFormData> = {
+  customerId: '',
+  currentSector: undefined,
+  assignedTo: '',
+  scheduledAt: '',
+}
+
 export default function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogProps) {
   const createTicket = useCreateTicket()
   const { data: customers = [] } = useCustomers()
 
   const form = useForm<TicketFormData>({
     resolver: zodResolver(ticketSchema),
-    defaultValues: {
-      customerId: '',
-      currentSector: undefined,
-      assignedTo: '',
-      scheduledAt: '',
-    },
+    defaultValues: DEFAULT_VALUES,
   })
 
+  function handleOpenChange(value: boolean) {
+    if (!value) form.reset(DEFAULT_VALUES)
+    onOpenChange(value)
+  }
+
   async function onSubmit(data: TicketFormData) {
-    await createTicket.mutateAsync({
-      customerId: data.customerId,
-      currentSector: data.currentSector,
-      assignedTo: data.assignedTo || undefined,
-      scheduledAt: data.scheduledAt ? new Date(data.scheduledAt).toISOString() : undefined,
-    })
-    form.reset()
-    onOpenChange(false)
+    try {
+      await createTicket.mutateAsync({
+        customerId: data.customerId,
+        currentSector: data.currentSector,
+        assignedTo: data.assignedTo || undefined,
+        scheduledAt: data.scheduledAt ? new Date(data.scheduledAt).toISOString() : undefined,
+      })
+      form.reset(DEFAULT_VALUES)
+      onOpenChange(false)
+    } catch {
+      // erro tratado pelo estado isError da mutation
+    }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Novo ticket</DialogTitle>
@@ -50,7 +62,7 @@ export default function CreateTicketDialog({ open, onOpenChange }: CreateTicketD
             <FormField control={form.control} name="customerId" render={({ field }) => (
               <FormItem>
                 <FormLabel>Cliente</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value ?? ''}>
                   <FormControl>
                     <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
                   </FormControl>
@@ -67,13 +79,13 @@ export default function CreateTicketDialog({ open, onOpenChange }: CreateTicketD
             <FormField control={form.control} name="currentSector" render={({ field }) => (
               <FormItem>
                 <FormLabel>Setor responsável</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value ?? ''}>
                   <FormControl>
                     <SelectTrigger><SelectValue placeholder="Selecione o setor" /></SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {Object.values(Sector).map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                      <SelectItem key={s} value={s}>{SECTOR_LABELS[s]}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -91,8 +103,14 @@ export default function CreateTicketDialog({ open, onOpenChange }: CreateTicketD
               </FormItem>
             )} />
 
+            {createTicket.isError && (
+              <p className="text-sm text-destructive">
+                Erro ao criar ticket. Verifique os dados e tente novamente.
+              </p>
+            )}
+
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                 Cancelar
               </Button>
               <Button type="submit" disabled={createTicket.isPending}>
