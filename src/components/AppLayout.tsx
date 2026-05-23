@@ -3,8 +3,10 @@ import { useAuthStore } from '@/store/auth.store'
 import { Button } from '@/components/ui/button'
 
 const navItems = [
-  { to: '/',       label: 'Dashboard' },
-  { to: '/users',  label: 'Usuários'  },
+  { to: '/',          label: 'Dashboard' },
+  { to: '/funnel',    label: 'Funil'     },
+  { to: '/customers', label: 'Clientes'  },
+  { to: '/users',     label: 'Usuários'  },
 ]
 
 export default function AppLayout() {

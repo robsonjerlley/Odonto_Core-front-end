@@ -1,5 +1,4 @@
 import { useForm } from 'react-hook-form'
-import type { ControllerRenderProps } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useUpdatePassword } from './users.queries'
@@ -46,7 +45,7 @@ export default function ChangePasswordDialog({ open, onOpenChange, username }: C
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="passwordHash" render={({ field }: { field: ControllerRenderProps }) => (
+            <FormField control={form.control} name="passwordHash" render={({ field }) => (
               <FormItem>
                 <FormLabel>Nova senha</FormLabel>
                 <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
@@ -54,7 +53,7 @@ export default function ChangePasswordDialog({ open, onOpenChange, username }: C
               </FormItem>
             )} />
 
-            <FormField control={form.control} name="confirm" render={({ field }: { field: ControllerRenderProps }) => (
+            <FormField control={form.control} name="confirm" render={({ field }) => (
               <FormItem>
                 <FormLabel>Confirmar senha</FormLabel>
                 <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>

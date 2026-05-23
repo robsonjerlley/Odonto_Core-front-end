@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useUsers, useRemoveUser } from './users.queries'
 import { Sector, Role } from '@/types/enums'
+import { SECTOR_LABELS, ROLE_LABELS } from '@/lib/labels'
 import type { User } from '@/types/models'
 import RoleGuard from '@/modules/auth/RoleGuard'
 import CreateUserDialog from './CreateUserDialog'
@@ -49,7 +50,7 @@ export default function UserListPage() {
           <SelectContent>
             <SelectItem value="all">Todos os setores</SelectItem>
             {Object.values(Sector).map((s) => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
+              <SelectItem key={s} value={s}>{SECTOR_LABELS[s]}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -61,7 +62,7 @@ export default function UserListPage() {
           <SelectContent>
             <SelectItem value="all">Todos os roles</SelectItem>
             {Object.values(Role).map((r) => (
-              <SelectItem key={r} value={r}>{r}</SelectItem>
+              <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -114,8 +115,8 @@ function UserRow({ user, onDelete, onChangePassword }: UserRowProps) {
     <TableRow>
       <TableCell>{user.name}</TableCell>
       <TableCell className="text-muted-foreground">{user.username}</TableCell>
-      <TableCell><Badge variant="outline">{user.sector}</Badge></TableCell>
-      <TableCell><Badge>{user.role}</Badge></TableCell>
+      <TableCell><Badge variant="outline">{SECTOR_LABELS[user.sector]}</Badge></TableCell>
+      <TableCell><Badge>{ROLE_LABELS[user.role]}</Badge></TableCell>
       <TableCell>
         <Badge variant={user.active ? 'default' : 'secondary'}>
           {user.active ? 'Ativo' : 'Inativo'}

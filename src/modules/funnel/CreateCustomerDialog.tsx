@@ -1,0 +1,166 @@
+import { useForm, type DefaultValues } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { CustomerSource, AdsChannel } from '@/types/enums'
+import { useCreateCustomer } from './funnel.queries'
+import { customerSchema, type CustomerFormData } from './customer.schema'
+import { CUSTOMER_SOURCE_LABELS, ADS_CHANNEL_LABELS } from '@/lib/labels'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
+interface CreateCustomerDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+const DEFAULT_VALUES: DefaultValues<CustomerFormData> = {
+  name: '',
+  cpf: '',
+  phone: '',
+  email: '',
+  source: undefined,
+  adChannel: undefined,
+  adCampaign: '',
+}
+
+export default function CreateCustomerDialog({ open, onOpenChange }: CreateCustomerDialogProps) {
+  const createCustomer = useCreateCustomer()
+
+  const form = useForm<CustomerFormData>({
+    resolver: zodResolver(customerSchema),
+    defaultValues: DEFAULT_VALUES,
+  })
+
+  const source = form.watch('source')
+
+  function handleOpenChange(value: boolean) {
+    if (!value) form.reset(DEFAULT_VALUES)
+    onOpenChange(value)
+  }
+
+  async function onSubmit(data: CustomerFormData) {
+    try {
+      const payload = {
+        ...data,
+        email: data.email || undefined,
+        adChannel: data.adChannel ?? undefined,
+        adCampaign: data.adCampaign || undefined,
+      }
+      await createCustomer.mutateAsync(payload)
+      form.reset(DEFAULT_VALUES)
+      onOpenChange(false)
+    } catch {
+      // erro tratado pelo estado isPending/isError da mutation
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Novo cliente</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="name" render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>Nome</FormLabel>
+                  <FormControl><Input placeholder="Nome do cliente" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="cpf" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>CPF</FormLabel>
+                  <FormControl><Input placeholder="00000000000" maxLength={11} {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="phone" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Telefone</FormLabel>
+                  <FormControl><Input placeholder="00 000000000" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="email" render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>E-mail (opcional)</FormLabel>
+                  <FormControl><Input placeholder="e-mail" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="source" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Origem</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                    <FormControl>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.values(CustomerSource).map((s) => (
+                        <SelectItem key={s} value={s}>{CUSTOMER_SOURCE_LABELS[s]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              {source === 'ADS_PAID' && (
+                <FormField control={form.control} name="adChannel" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Canal de Ads</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.values(AdsChannel).map((c) => (
+                          <SelectItem key={c} value={c}>{ADS_CHANNEL_LABELS[c]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              )}
+
+              {source === 'ADS_PAID' && (
+                <FormField control={form.control} name="adCampaign" render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Campanha (opcional)</FormLabel>
+                    <FormControl><Input placeholder="Nome da campanha" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              )}
+            </div>
+
+            {createCustomer.isError && (
+              <p className="text-sm text-destructive">
+                Erro ao criar cliente. Verifique os dados e tente novamente.
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={createCustomer.isPending}>
+                {createCustomer.isPending ? 'Criando...' : 'Criar'}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}

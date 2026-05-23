@@ -59,10 +59,12 @@ export interface LeadTicket {
 export interface ContactLog {
     id: string
     ticketId: string
+    userId: string
     channel: ContactChannel
-    notes?: string
-    scheduledAt?: string
-    createdBy: string
+    note: string
+    statusBefore: TicketStatus
+    statusAfter: TicketStatus
+    occurredAt: string
     createdAt: string
 }
 
