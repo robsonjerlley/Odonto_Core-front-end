@@ -13,7 +13,9 @@ import {
 } from './commercial.queries'
 import {
   dealFormSchema, discountSchema, closeDealSchema,
-  type DealFormData, type DiscountFormData, type CloseDealFormData,
+  type DealFormInput, type DealFormData,
+  type DiscountFormInput, type DiscountFormData,
+  type CloseDealFormData,
 } from './deal.schema'
 import ProcedureListEditor from './ProcedureListEditor'
 import { SECTOR_LABELS } from '@/lib/labels'
@@ -45,7 +47,7 @@ interface EditProceduresDialogProps {
 function EditProceduresDialog({ deal, ticketId, open, onOpenChange }: EditProceduresDialogProps) {
   const update = useUpdateDeal(deal.id, ticketId)
 
-  const form = useForm<DealFormData>({
+  const form = useForm<DealFormInput, any, DealFormData>({
     resolver: zodResolver(dealFormSchema),
     defaultValues: { procedures: deal.procedures },
   })
@@ -96,7 +98,7 @@ interface ApplyDiscountDialogProps {
 function ApplyDiscountDialog({ deal, ticketId, open, onOpenChange }: ApplyDiscountDialogProps) {
   const apply = useApplyDiscount(deal.id, ticketId)
 
-  const form = useForm<DiscountFormData>({
+  const form = useForm<DiscountFormInput, any, DiscountFormData>({
     resolver: zodResolver(discountSchema),
     defaultValues: { discountPct: deal.discountPct ?? undefined },
   })
@@ -123,7 +125,7 @@ function ApplyDiscountDialog({ deal, ticketId, open, onOpenChange }: ApplyDiscou
                 <FormItem>
                   <FormLabel>Desconto (%)</FormLabel>
                   <FormControl>
-                    <Input type="number" min={0.01} max={100} step={0.01} placeholder="Ex: 10" {...field} />
+                    <Input type="number" min={0.01} max={100} step={0.01} placeholder="Ex: 10" {...field} value={(field.value as string | number | undefined) ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -296,7 +298,7 @@ export default function DealSheet({ ticket, customer, open, onOpenChange }: Deal
 
   const createDeal = useCreateDeal(ticket?.id ?? '')
 
-  const createForm = useForm<DealFormData>({
+  const createForm = useForm<DealFormInput, any, DealFormData>({
     resolver: zodResolver(dealFormSchema),
     defaultValues: { procedures: [{ name: '', code: '', tableValue: 0, quantity: 1, note: '' }] },
   })

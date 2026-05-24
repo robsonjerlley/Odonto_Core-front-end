@@ -12,9 +12,19 @@ export interface CreateUserDTO {
     role: Role
 }
 
+interface CreateUserPayload {
+    name: string
+    username: string
+    passwordHash: string
+    sector: Sector
+    role: Role
+}
+
 
 export interface UpdatePasswordDTO {
-    passwordHash: string
+    username: string
+    oldPassword: string
+    newPasswordHash: string
 }
 
 export const usersService = {
@@ -37,8 +47,16 @@ export const usersService = {
         api.get<User[]>(`/api/v1/users/findBySectorAndRole/${sector}/${role}`).then((r) => r.data),
 
 
-    create: (data: CreateUserDTO) =>
-        api.post<User>(`/api/v1/users/create`, data).then((r) => r.data),
+    create: (data: CreateUserDTO) => {
+        const payload: CreateUserPayload = {
+            name: data.name,
+            username: data.username,
+            passwordHash: data.password,
+            sector: data.sector,
+            role: data.role,
+        }
+        return api.post<User>(`/api/v1/users/create`, payload).then((r) => r.data)
+    },
 
     updatePassword: (username: string, data: UpdatePasswordDTO) => 
         api.patch(`/api/v1/users/updatePassword/${username}/passwordHash`, data),

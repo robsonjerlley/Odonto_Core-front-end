@@ -2,10 +2,10 @@ import { useFieldArray, type Control } from 'react-hook-form'
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import type { DealFormData } from './deal.schema'
+import type { DealFormInput } from './deal.schema'
 
 interface Props {
-  control: Control<DealFormData>
+  control: Control<DealFormInput>
 }
 
 const EMPTY_PROCEDURE = { name: '', code: '', tableValue: 0, quantity: 1, note: '' }
@@ -68,7 +68,7 @@ export default function ProcedureListEditor({ control }: Props) {
                 <FormItem>
                   <FormLabel>Quantidade</FormLabel>
                   <FormControl>
-                    <Input type="number" min={1} {...field} />
+                    <Input type="number" min={1} {...field} value={(field.value as string | number | undefined) ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -82,7 +82,7 @@ export default function ProcedureListEditor({ control }: Props) {
                 <FormItem className="col-span-2">
                   <FormLabel>Valor tabela (R$)</FormLabel>
                   <FormControl>
-                    <Input type="number" min={0} step={0.01} placeholder="0,00" {...field} />
+                    <Input type="number" min={0} step={0.01} placeholder="0,00" {...field} value={(field.value as string | number | undefined) ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

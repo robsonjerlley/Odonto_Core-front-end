@@ -8,9 +8,10 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 const changePasswordSchema = z.object({
-  passwordHash: z.string().min(6, 'Mínimo 6 caracteres'),
+  oldPassword: z.string().min(1, 'Informe a senha atual'),
+  newPasswordHash: z.string().min(8, 'Mínimo 8 caracteres'),
   confirm: z.string(),
-}).refine((d) => d.passwordHash === d.confirm, {
+}).refine((d) => d.newPasswordHash === d.confirm, {
   message: 'Senhas não conferem',
   path: ['confirm'],
 })
@@ -28,11 +29,18 @@ export default function ChangePasswordDialog({ open, onOpenChange, username }: C
 
   const form = useForm<ChangePasswordFormData>({
     resolver: zodResolver(changePasswordSchema),
-    defaultValues: { passwordHash: '', confirm: '' },
+    defaultValues: { oldPassword: '', newPasswordHash: '', confirm: '' },
   })
 
   async function onSubmit(data: ChangePasswordFormData) {
-    await updatePassword.mutateAsync({ username, data: { passwordHash: data.passwordHash } })
+    await updatePassword.mutateAsync({
+      username,
+      data: {
+        username,
+        oldPassword: data.oldPassword,
+        newPasswordHash: data.newPasswordHash,
+      },
+    })
     form.reset()
     onOpenChange(false)
   }
@@ -45,7 +53,15 @@ export default function ChangePasswordDialog({ open, onOpenChange, username }: C
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="passwordHash" render={({ field }) => (
+            <FormField control={form.control} name="oldPassword" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Senha atual</FormLabel>
+                <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="newPasswordHash" render={({ field }) => (
               <FormItem>
                 <FormLabel>Nova senha</FormLabel>
                 <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
@@ -55,7 +71,7 @@ export default function ChangePasswordDialog({ open, onOpenChange, username }: C
 
             <FormField control={form.control} name="confirm" render={({ field }) => (
               <FormItem>
-                <FormLabel>Confirmar senha</FormLabel>
+                <FormLabel>Confirmar nova senha</FormLabel>
                 <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>

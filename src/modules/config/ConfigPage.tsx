@@ -17,11 +17,12 @@ const recycleSchema = z.object({
   sector: z.enum(Object.values(Sector) as [Sector, ...Sector[]]).optional(),
   afterDays: z.coerce.number().int().min(1, 'Mínimo 1 dia'),
 })
-type RecycleForm = z.infer<typeof recycleSchema>
+type RecycleFormInput = z.input<typeof recycleSchema>
+type RecycleForm = z.output<typeof recycleSchema>
 
 function RecycleConfigCard() {
   const [success, setSuccess] = useState(false)
-  const form = useForm<RecycleForm>({
+  const form = useForm<RecycleFormInput, any, RecycleForm>({
     resolver: zodResolver(recycleSchema),
     defaultValues: { afterDays: 7 },
   })
@@ -71,7 +72,7 @@ function RecycleConfigCard() {
               <FormItem>
                 <FormLabel>Prazo para reciclagem (dias)</FormLabel>
                 <FormControl>
-                  <Input type="number" min={1} {...field} />
+                  <Input type="number" min={1} {...field} value={(field.value as string | number | undefined) ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -102,7 +103,8 @@ const bonusSchema = z.object({
   targetValue: z.coerce.number().positive().optional(),
   periodRef: z.string().regex(/^\d{4}-\d{2}$/, 'Formato: AAAA-MM'),
 })
-type BonusForm = z.infer<typeof bonusSchema>
+type BonusFormInput = z.input<typeof bonusSchema>
+type BonusForm = z.output<typeof bonusSchema>
 
 const METRIC_OPTIONS = [
   { value: 'SCHEDULED_COUNT', label: 'Agendamentos' },
@@ -113,7 +115,7 @@ const METRIC_OPTIONS = [
 
 function BonusConfigCard() {
   const [success, setSuccess] = useState(false)
-  const form = useForm<BonusForm>({
+  const form = useForm<BonusFormInput, any, BonusForm>({
     resolver: zodResolver(bonusSchema),
     defaultValues: {
       metricKey: '',
@@ -210,7 +212,7 @@ function BonusConfigCard() {
                 <FormItem>
                   <FormLabel>Percentual de bônus (%)</FormLabel>
                   <FormControl>
-                    <Input type="number" min={0.01} max={100} step={0.01} placeholder="Ex: 5" {...field} />
+                    <Input type="number" min={0.01} max={100} step={0.01} placeholder="Ex: 5" {...field} value={(field.value as string | number | undefined) ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -220,7 +222,7 @@ function BonusConfigCard() {
                 <FormItem>
                   <FormLabel>Meta (opcional)</FormLabel>
                   <FormControl>
-                    <Input type="number" min={0} step={0.01} placeholder="Valor alvo" {...field} />
+                    <Input type="number" min={0} step={0.01} placeholder="Valor alvo" {...field} value={(field.value as string | number | undefined) ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -261,11 +263,12 @@ const adsSchema = z.object({
   periodStart: z.string().min(1, 'Informe a data inicial'),
   periodEnd: z.string().min(1, 'Informe a data final'),
 })
-type AdsForm = z.infer<typeof adsSchema>
+type AdsFormInput = z.input<typeof adsSchema>
+type AdsForm = z.output<typeof adsSchema>
 
 function AdsInvestmentCard() {
   const [success, setSuccess] = useState(false)
-  const form = useForm<AdsForm>({
+  const form = useForm<AdsFormInput, any, AdsForm>({
     resolver: zodResolver(adsSchema),
     defaultValues: { campaign: '', amount: undefined },
   })
@@ -321,7 +324,7 @@ function AdsInvestmentCard() {
                 <FormItem>
                   <FormLabel>Valor investido (R$)</FormLabel>
                   <FormControl>
-                    <Input type="number" min={0.01} step={0.01} placeholder="0,00" {...field} />
+                    <Input type="number" min={0.01} step={0.01} placeholder="0,00" {...field} value={(field.value as string | number | undefined) ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

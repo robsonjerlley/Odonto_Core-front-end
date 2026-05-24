@@ -23,6 +23,8 @@ export const closeDealSchema = z.object({
   paymentMethod: z.string().min(1, 'Selecione a forma de pagamento'),
 })
 
-export type DealFormData = z.infer<typeof dealFormSchema>
-export type DiscountFormData = z.infer<typeof discountSchema>
+export type DealFormInput = z.input<typeof dealFormSchema>
+export type DealFormData = z.output<typeof dealFormSchema>
+export type DiscountFormInput = z.input<typeof discountSchema>
+export type DiscountFormData = z.output<typeof discountSchema>
 export type CloseDealFormData = z.infer<typeof closeDealSchema>
