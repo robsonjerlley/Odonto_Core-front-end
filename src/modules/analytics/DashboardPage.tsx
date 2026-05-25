@@ -133,15 +133,15 @@ function DropOffChart({ data }: { data: { sector: string; dropOffPct: number; en
 // ─── Stage conversion card ────────────────────────────────────────────────────
 
 function ConversionCard({ period }: { period: AnalyticsPeriod }) {
-  const [sector, setSector] = useState<string>('')
-  const { data, isLoading } = useConversion(sector as any, period)
+  const [sector, setSector] = useState<Sector | ''>('')
+  const { data, isLoading } = useConversion(sector, period)
 
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="text-base">Conversão por setor</CardTitle>
-          <Select value={sector} onValueChange={setSector}>
+          <Select value={sector} onValueChange={(v) => setSector(v as Sector)}>
             <SelectTrigger className="w-44 h-8 text-sm">
               <SelectValue placeholder="Selecione o setor" />
             </SelectTrigger>

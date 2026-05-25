@@ -81,8 +81,8 @@ export interface DealProcedure {
 export interface Deal {
     id: string
     ticketId: string
-    createdBySector: Sector
     createdBy: string
+    createdBySector: Sector
     procedures: DealProcedure[]
     totalValue: number
     discountPct?: number
@@ -152,7 +152,7 @@ export interface UserPerformanceResultDTO {
     calculatedBonus: number
 }
 
-export interface GlobalDashboard {
+export interface GlobalDashBoardResultDTO {
     period: DataRangeDTO
     adsRoi: AdsRoiResultDTO[]
     stageConversion: StageConversionResultDTO

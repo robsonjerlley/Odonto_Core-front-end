@@ -14,12 +14,12 @@ CRM odontológico desenvolvido para clínicas. Rastreia o ciclo completo do clie
 |---|---|
 | Build | Vite 8 |
 | Framework | React 19 + TypeScript 6 strict |
-| Estilização | Tailwind CSS + shadcn/ui (a instalar) |
-| Server State | TanStack Query v5 (a instalar) |
-| Client State | Zustand (a instalar) |
-| Formulários | React Hook Form + Zod (a instalar) |
-| HTTP | Axios (a instalar) |
-| Roteamento | React Router v6 (a instalar) |
+| Estilização | Tailwind CSS + shadcn/ui |
+| Server State | TanStack Query v5 |
+| Client State | Zustand |
+| Formulários | React Hook Form + Zod |
+| HTTP | Axios |
+| Roteamento | React Router v6 |
 
 > **Não usar Next.js.** O projeto foi iniciado com Vite e SPA pura. Manter essa decisão.
 
@@ -76,11 +76,15 @@ POST  /api/v1/authentication/login
 ### Identity — Usuários
 ```
 POST   /api/v1/users/create
+       body: { name, username, passwordHash, sector, role }
+GET    /api/v1/users
 GET    /api/v1/users/findByUsername/{username}
 GET    /api/v1/users/findBySector/{sector}
 GET    /api/v1/users/findBySectorAndRole/{sector}/{role}
 GET    /api/v1/users/existsByUsername/{username}
 PATCH  /api/v1/users/updatePassword/{username}/passwordHash
+       body: { username, oldPassword, newPasswordHash }
+       ⚠ o backend usa apenas newPasswordHash; oldPassword é validado mas ignorado no service
 DELETE /api/v1/users/{id}
 ```
 
@@ -110,39 +114,63 @@ DELETE /api/v1/tickets/{id}
 ### Funnel — Logs de contato
 ```
 POST   /api/v1/contact-logs
+       body: { ticketId: UUID, channel: ContactChannel, note, occurredAt: LocalDateTime }
 GET    /api/v1/contact-logs
 GET    /api/v1/contact-logs/{id}
-GET    /api/v1/contact-logs/findByTicketId/{id}
+GET    /api/v1/contact-logs/findByTicketId/{ticketId}
 DELETE /api/v1/contact-logs/{id}
 ```
 
 ### Commercial — Deal
 ```
-POST   /api/v1/deal/{ticketId}           criar orçamento vinculado ao ticket
-PATCH  /api/v1/deal/{id}                 atualizar procedimentos/valores
-PATCH  /api/v1/deal/{id}/discount        aplicar desconto (pode exigir aprovação)
-PATCH  /api/v1/deal/{id}/closeDeal       fechar deal com paymentMethod
-GET    /api/v1/deal/{id}/dealHistory     deal + histórico de versões
+POST   /api/v1/deal/{ticketId}
+       body: { procedures: DealProcedureDTO[] }
+GET    /api/v1/deal/findByTicket/{ticketId}
+       → 200 + DealResponseDTO  (deal ativo encontrado)
+       → 204 No Content         (ticket ainda não tem deal)
+PATCH  /api/v1/deal/{id}
+       body: { procedures: DealProcedureDTO[] }
+PATCH  /api/v1/deal/{id}/discount
+       body: { discountPct: BigDecimal }
+PATCH  /api/v1/deal/{id}/closeDeal
+       body: { paymentMethod: string }
+GET    /api/v1/deal/{id}/dealHistory     → DealDetailResponseDTO { deal, history[] }
 ```
+
+`DealProcedureDTO` = `{ name, code?, tableValue: BigDecimal, quantity: int, note? }`
 
 ### Commercial — Config (ADM_SYSTEM)
 ```
-POST   /api/v1/config/recycle            configura regra de reciclagem de tickets
-POST   /api/v1/config/bonus              configura regras de bônus
-POST   /api/v1/config/ads-investment     registra investimento em ads por período/canal
+POST   /api/v1/config/recycle
+       body: { sector: Sector, afterDays: int }
+POST   /api/v1/config/bonus
+       body: { sector, role, metricKey, bonusPct, targetValue?, periodRef: "YYYY-MM" }
+POST   /api/v1/config/ads-investment
+       body: { channel: AdsChannel, campaign?, amount, periodStart: LocalDate, periodEnd: LocalDate }
 ```
 
 ### Analytics
 ```
-GET    /api/v1/analytics/dashboard                         GlobalDashboard
-GET    /api/v1/analytics/ads-roi?channel=GOOGLE&startDate=...&endDate=...
-GET    /api/v1/analytics/conversion?sector=LEADS&startDate=...&endDate=...
-GET    /api/v1/analytics/dropoff?startDate=...&endDate=...
-GET    /api/v1/analytics/user-performance/{targetUserId}?startDate=...&endDate=...
+GET    /api/v1/analytics/dashboard?from=YYYY-MM-DD&to=YYYY-MM-DD
+       → GlobalDashBoardResultDTO
+
+GET    /api/v1/analytics/ads-roi?channel=GOOGLE&from=YYYY-MM-DD&to=YYYY-MM-DD
+       → AdsRoiResultDTO  (único objeto, não lista — filtra por canal)
+
+GET    /api/v1/analytics/conversion?sector=LEADS&from=YYYY-MM-DD&to=YYYY-MM-DD
+       → StageConversionResultDTO
+
+GET    /api/v1/analytics/dropoff?from=YYYY-MM-DD&to=YYYY-MM-DD
+       → SectorDropOffResultDTO[]
+
+GET    /api/v1/analytics/user-performance/{targetUserId}?from=YYYY-MM-DD&to=YYYY-MM-DD
+       → UserPerformanceResultDTO
+
 GET    /api/v1/analytics/bonus/{targetId}?periodRef=YYYY-MM
+       → BigDecimal (número puro)
 ```
 
-> `DataRangeDTO` = `{ startDate: LocalDate, endDate: LocalDate }` — enviado como query params.
+> `DataRangeDTO` = `{ from: LocalDate, to: LocalDate }` — enviado como query params `?from=&to=`.
 
 ---
 
@@ -177,12 +205,60 @@ GET    /api/v1/analytics/bonus/{targetId}?periodRef=YYYY-MM
   active, createdBy?, createdAt, updatedAt }
 ```
 
-### GlobalDashboard
+### DataRangeDTO
 ```ts
-{ period: DataRangeDTO, adsRoi: AdsRoiResultDTO[],
+{ from: string, to: string }   // LocalDate → "YYYY-MM-DD"
+```
+
+### GlobalDashBoardResultDTO
+```ts
+{ period: DataRangeDTO,
+  adsRoi: AdsRoiResultDTO[],
   stageConversion: StageConversionResultDTO,
   sectorDropOff: SectorDropOffResultDTO[],
   topPerformers: UserPerformanceResultDTO[] }
+```
+
+### AdsRoiResultDTO
+```ts
+{ channel: AdsChannel, totalInvestment: number, totalRevenue: number,
+  roiMultiplier: number, leadsCount: number, closedCount: number }
+```
+
+### StageConversionResultDTO
+```ts
+{ sector: Sector, captureCount: number, scheduledCount: number,
+  dealCreatedCount: number, closedCount: number,
+  leadsConversionPct: number, evaluationConversionPct: number, commercialConversionPct: number }
+```
+
+### SectorDropOffResultDTO
+```ts
+{ sector: Sector, entryCount: number, exitCount: number,
+  lossCount: number, dropOffPct: number }
+```
+
+### UserPerformanceResultDTO
+```ts
+{ userId: string, name: string, sector: Sector,
+  totalAssigned: number, totalConverted: number,
+  conversionPct: number, avgTicketValue: number, calculatedBonus: number }
+```
+
+### DealResponseDTO
+```ts
+{ id, ticketId, createdBy, createdBySector: Sector,
+  procedures: DealProcedureDTO[],
+  totalValue: number, discountPct?: number, discountApprovedBy?: string,
+  finalValue?: number, paymentMethod?: string,
+  closedBy?: string, closedAt?: string,
+  archived: boolean, createdAt, updatedAt }
+```
+
+### DealHistoryResponseDTO
+```ts
+{ dealId, changedBy, changedBySector: Sector,
+  fieldChanged, valueBefore, valueAfter, occurredAt }
 ```
 
 ---
@@ -199,51 +275,51 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN
 
 ## Plano de implementação — Fases
 
-### Fase 1 — Fundação
-- [ ] Instalar dependências: Tailwind, shadcn/ui, TanStack Query, Zustand, React Router v6, Axios, React Hook Form, Zod
-- [ ] Estrutura de pastas por módulo (`src/modules/auth`, `funnel`, `commercial`, `analytics`, `identity`)
-- [ ] Axios instance com interceptor JWT (inject token + redirect 401)
-- [ ] Tipos TypeScript espelhando todos os enums e modelos do backend
-- [ ] Providers globais: QueryClient, Router
+### Fase 1 — Fundação ✅
+- [x] Instalar dependências: Tailwind, shadcn/ui, TanStack Query, Zustand, React Router v6, Axios, React Hook Form, Zod
+- [x] Estrutura de pastas por módulo (`src/modules/auth`, `funnel`, `commercial`, `analytics`, `identity`)
+- [x] Axios instance com interceptor JWT (inject token + redirect 401)
+- [x] Tipos TypeScript espelhando todos os enums e modelos do backend
+- [x] Providers globais: QueryClient, Router
 
-### Fase 2 — Auth
-- [ ] Página `/login` — React Hook Form + Zod
-- [ ] Zustand store: `{ user, token, login(), logout() }`
-- [ ] Persistência de token
-- [ ] Protected route wrapper com redirect por role/sector
-- [ ] Redirect pós-login por role
+### Fase 2 — Auth ✅
+- [x] Página `/login` — React Hook Form + Zod
+- [x] Zustand store: `{ user, token, login(), logout() }`
+- [x] Persistência de token em localStorage
+- [x] Protected route wrapper com redirect por role/sector
+- [x] Redirect pós-login por role
 
-### Fase 3 — Identity (Usuários)
-- [ ] Listagem de usuários com filtro por sector/role
-- [ ] Formulário criação de usuário
-- [ ] Troca de senha
-- [ ] Delete com confirmação
-- [ ] Componente `<RoleGuard>` para controle de visibilidade por role
+### Fase 3 — Identity (Usuários) ✅
+- [x] Listagem de usuários com filtro por sector/role
+- [x] Formulário criação de usuário
+- [x] Troca de senha
+- [x] Delete com confirmação
+- [x] Componente `<RoleGuard>` para controle de visibilidade por role
 
-### Fase 4 — Funnel
-- [ ] Listagem e cadastro de clientes
-- [ ] Busca por nome e CPF
-- [ ] Kanban de tickets por `TicketStatus` com drag-and-drop
-- [ ] Card de ticket com detalhes e ações
-- [ ] Timeline de logs de contato dentro do ticket
-- [ ] Formulário de novo log com `ContactChannel` + agendamento opcional
+### Fase 4 — Funnel ✅
+- [x] Listagem e cadastro de clientes
+- [x] Busca por nome e CPF (client-side)
+- [x] Kanban de tickets por `TicketStatus` com drag-and-drop (`@dnd-kit`)
+- [x] Card de ticket com detalhes e ações
+- [x] Timeline de logs de contato dentro do ticket
+- [x] Formulário de novo log com `ContactChannel` + data/hora
 
 ### Fase 5 — Commercial
 - [ ] Criação de deal vinculado ao ticket (lista de procedimentos)
 - [ ] Edição de deal
-- [ ] Fluxo de desconto com estado "aguardando aprovação"
+- [ ] Fluxo de desconto
 - [ ] Fechamento de deal com seleção de forma de pagamento
 - [ ] Histórico de versões do deal
 - [ ] Configurações admin: RecycleConfig, BonusConfig, AdsInvestment
 
 ### Fase 6 — Analytics
-- [ ] Dashboard global com filtro de período
-- [ ] Gráfico de ROI por canal de Ads
+- [ ] Dashboard global com filtro de período (`from`/`to`)
+- [ ] Gráfico de ROI por canal de Ads (um canal por vez)
 - [ ] Funil de conversão por estágio/setor
 - [ ] Drop-off por setor
 - [ ] Ranking de performance
 - [ ] Tela de performance individual
-- [ ] Cálculo de bônus por período
+- [ ] Cálculo de bônus por período (`periodRef: YYYY-MM`)
 
 ---
 

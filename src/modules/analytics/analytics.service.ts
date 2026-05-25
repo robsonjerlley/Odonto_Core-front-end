@@ -1,6 +1,6 @@
 import api from '@/lib/api'
 import type {
-  GlobalDashboard,
+  GlobalDashBoardResultDTO,
   AdsRoiResultDTO,
   StageConversionResultDTO,
   SectorDropOffResultDTO,
@@ -16,7 +16,7 @@ export interface AnalyticsPeriod {
 export const analyticsService = {
   getDashboard: (period: AnalyticsPeriod) =>
     api
-      .get<GlobalDashboard>('/api/v1/analytics/dashboard', { params: period })
+      .get<GlobalDashBoardResultDTO>('/api/v1/analytics/dashboard', { params: period })
       .then((r) => r.data),
 
   getAdsRoi: (channel: AdsChannel, period: AnalyticsPeriod) =>

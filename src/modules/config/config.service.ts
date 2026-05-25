@@ -4,7 +4,6 @@ import type { Sector, Role, AdsChannel } from '@/types/enums'
 export interface RecycleConfigDTO {
   sector?: Sector
   afterDays: number
-  active?: boolean
 }
 
 export interface BonusConfigDTO {
@@ -13,7 +12,6 @@ export interface BonusConfigDTO {
   metricKey: string
   bonusPct: number
   targetValue?: number
-  active?: boolean
   periodRef: string
 }
 

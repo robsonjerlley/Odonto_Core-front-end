@@ -10,14 +10,11 @@ import type { Deal, DealDetail } from '@/types/models'
 const dealTicketKey = (ticketId: string) => ['deal-ticket', ticketId] as const
 const dealDetailKey = (id: string) => ['deal-detail', id] as const
 
-// Populated only via mutations (no direct list endpoint exists)
 export function useDealForTicket(ticketId: string) {
   return useQuery<Deal | null>({
     queryKey: dealTicketKey(ticketId),
-    queryFn: () => null,
-    staleTime: Infinity,
-    gcTime: Infinity,
-    enabled: false,
+    queryFn: () => commercialService.findByTicket(ticketId),
+    enabled: !!ticketId,
   })
 }
 

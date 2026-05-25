@@ -22,6 +22,11 @@ export interface CloseDealDTO {
 }
 
 export const commercialService = {
+  findByTicket: async (ticketId: string): Promise<Deal | null> => {
+    const r = await api.get<Deal>(`/api/v1/deal/findByTicket/${ticketId}`)
+    return r.status === 204 || !r.data ? null : r.data
+  },
+
   createDeal: (ticketId: string, dto: DealCreateDTO) =>
     api.post<Deal>(`/api/v1/deal/${ticketId}`, dto).then((r) => r.data),
 

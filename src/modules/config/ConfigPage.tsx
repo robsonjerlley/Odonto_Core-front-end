@@ -29,7 +29,7 @@ function RecycleConfigCard() {
 
   async function onSubmit(data: RecycleForm) {
     try {
-      const dto: RecycleConfigDTO = { afterDays: data.afterDays, active: true }
+      const dto: RecycleConfigDTO = { afterDays: data.afterDays }
       if (data.sector) dto.sector = data.sector
       await configService.setRecycleConfig(dto)
       setSuccess(true)
@@ -133,7 +133,6 @@ function BonusConfigCard() {
         bonusPct: data.bonusPct,
         targetValue: data.targetValue,
         periodRef: data.periodRef,
-        active: true,
       }
       await configService.setBonusConfig(dto)
       setSuccess(true)

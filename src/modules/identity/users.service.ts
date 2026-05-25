@@ -1,6 +1,5 @@
 import api from '@/lib/api'
-import { Sector } from '@/types/enums'
-import type { Role } from '@/types/enums'
+import type { Sector, Role } from '@/types/enums'
 import type { User } from '@/types/models'
 
 
@@ -28,16 +27,8 @@ export interface UpdatePasswordDTO {
 }
 
 export const usersService = {
-    findAll: async (): Promise<User[]> => {
-        const results = await Promise.all(
-            Object.values(Sector).map((s) =>
-                api.get<User[]>(`/api/v1/users/findBySector/${s}`).then((r) => r.data)
-            )
-        )
-        const map = new Map<string, User>()
-        results.flat().forEach((u) => map.set(u.id, u))
-        return Array.from(map.values())
-    },
+    findAll: () =>
+        api.get<User[]>('/api/v1/users').then((r) => r.data),
 
     findBySector: (sector: Sector) =>
         api.get<User[]>(`/api/v1/users/findBySector/${sector}`).then((r) => r.data),

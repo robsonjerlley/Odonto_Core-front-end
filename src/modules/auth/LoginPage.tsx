@@ -9,7 +9,27 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import api from '@/lib/api'
+import type { User } from '@/types/models'
+import { Role } from '@/types/enums'
 
+function getDefaultRoute(user: User): string {
+  switch (user.role) {
+    case Role.ADM_SYSTEM:
+      return '/'
+    case Role.ADM_LEADS:
+    case Role.USER_LEADS:
+    case Role.ADM_EVALUATOR:
+    case Role.USER_EVALUATOR:
+      return '/funnel'
+    case Role.USER_ATTENDANT:
+      return '/customers'
+    case Role.ADM_COMMERCIAL:
+    case Role.USER_COMMERCIAL:
+      return '/commercial'
+    default:
+      return '/'
+  }
+}
 
 export default function LoginPage() {
     const navigate = useNavigate()
@@ -28,14 +48,12 @@ export default function LoginPage() {
           data,
         )
 
-        // Salva o token no store antes do segundo request
-        // O interceptor do Axios vai injetá-lo automaticamente
         login(null, authData.token)
 
-        const { data: userData } = await api.get(`/api/v1/users/findByUsername/${data.username}`)
+        const { data: userData } = await api.get<User>(`/api/v1/users/findByUsername/${data.username}`)
 
         login(userData, authData.token)
-        navigate('/')
+        navigate(getDefaultRoute(userData))
       } catch (error) {
         if (axios.isAxiosError(error)) {
           const status = error.response?.status
