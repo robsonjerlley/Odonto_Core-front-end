@@ -21,15 +21,16 @@ export const Sector = {
 export type Sector = typeof Sector[keyof typeof Sector]
 
 export const TicketStatus = {
-  NEW:           'NEW',
-  IN_CONTACT:    'IN_CONTACT',
-  SCHEDULED:     'SCHEDULED',
-  IN_EVALUATION: 'IN_EVALUATION',
-  NEGOTIATION:   'NEGOTIATION',
-  WIN:           'WIN',
-  PENDING:       'PENDING',
-  RECYCLED:      'RECYCLED',
-  LOSS:          'LOSS',
+  NEW:             'NEW',
+  IN_CONTACT:      'IN_CONTACT',
+  SCHEDULED:       'SCHEDULED',
+  IN_EVALUATION:   'IN_EVALUATION',
+  NEGOTIATION:     'NEGOTIATION',
+  WIN:             'WIN',
+  PENDING:         'PENDING',
+  RECYCLED:        'RECYCLED',
+  LOSS:            'LOSS',
+  POST_PROCEDURE:  'POST_PROCEDURE',
 } as const
 export type TicketStatus = typeof TicketStatus[keyof typeof TicketStatus]
 
@@ -60,3 +61,13 @@ export const CustomerSource = {
   INDICATION: 'INDICATION',
 } as const
 export type CustomerSource = typeof CustomerSource[keyof typeof CustomerSource]
+
+export const PaymentMethod = {
+  PIX:              'PIX',
+  CASH:             'CASH',
+  DEBIT_CARD:       'DEBIT_CARD',
+  CREDIT_CARD:      'CREDIT_CARD',
+  INSTALLMENT:      'INSTALLMENT',
+  DENTAL_INSURANCE: 'DENTAL_INSURANCE',
+} as const
+export type PaymentMethod = typeof PaymentMethod[keyof typeof PaymentMethod]

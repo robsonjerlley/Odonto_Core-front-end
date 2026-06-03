@@ -3,7 +3,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { useHasRole } from '@/hooks/useHasRole'
 import { Role } from '@/types/enums'
 import { Button } from '@/components/ui/button'
-import { ROLE_LABELS } from '@/lib/labels'
+import { ROLE_LABELS, NAV_LABELS } from '@/lib/labels'
 
 export default function AppLayout() {
   const { user, logout } = useAuthStore()
@@ -25,14 +25,14 @@ export default function AppLayout() {
       <aside className="w-56 border-r flex flex-col">
         <div className="p-4 border-b font-semibold">OdontoCore</div>
         <nav className="flex-1 p-2 space-y-1">
-          <NavLink to="/" end className={navLinkClass}>Dashboard</NavLink>
-          <NavLink to="/funnel" className={navLinkClass}>Funil</NavLink>
-          <NavLink to="/customers" className={navLinkClass}>Clientes</NavLink>
-          <NavLink to="/commercial" className={navLinkClass}>Comercial</NavLink>
+          <NavLink to="/" end className={navLinkClass}>{NAV_LABELS.overview}</NavLink>
+          <NavLink to="/funnel" className={navLinkClass}>{NAV_LABELS.pipeline}</NavLink>
+          <NavLink to="/customers" className={navLinkClass}>{NAV_LABELS.patients}</NavLink>
+          <NavLink to="/commercial" className={navLinkClass}>{NAV_LABELS.negotiations}</NavLink>
           {isAdmin && (
             <>
-              <NavLink to="/users" className={navLinkClass}>Usuários</NavLink>
-              <NavLink to="/config" className={navLinkClass}>Configurações</NavLink>
+              <NavLink to="/users" className={navLinkClass}>{NAV_LABELS.team}</NavLink>
+              <NavLink to="/config" className={navLinkClass}>{NAV_LABELS.settings}</NavLink>
             </>
           )}
         </nav>

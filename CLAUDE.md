@@ -52,7 +52,8 @@ enum Sector {
 ```ts
 enum TicketStatus {
   NEW, IN_CONTACT, SCHEDULED, IN_EVALUATION,
-  NEGOTIATION, WIN, PENDING, RECYCLED, LOSS
+  NEGOTIATION, WIN, PENDING, RECYCLED, LOSS,
+  POST_PROCEDURE  // ← adicionado após análise do backend (2026-06-02)
 }
 
 enum AdsChannel   { GOOGLE, META, INSTAGRAM, TIKTOK, OUTER }
@@ -187,7 +188,10 @@ GET    /api/v1/analytics/bonus/{targetId}?periodRef=YYYY-MM
 ```ts
 { id, customerId, status: TicketStatus, currentSector: Sector,
   assignedTo?, scheduledAt?, pendingAt?, closedAt?,
-  createdBy, previousTicketId?, createdAt, updatedAt, recycledAt? }
+  createdBy, previousTicketId?, createdAt, updatedAt, recycledAt?,
+  procedurePerformedAt?: string,  // ← backend retorna, frontend deve mapear
+  returnScheduledAt?: string      // ← backend retorna, frontend deve mapear
+}
 ```
 
 ### Deal
@@ -266,7 +270,7 @@ GET    /api/v1/analytics/bonus/{targetId}?periodRef=YYYY-MM
 ## Funil — fluxo de status do ticket
 
 ```
-NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN
+NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → POST_PROCEDURE
                                                            ↘ LOSS
                                               ↘ PENDING → RECYCLED → (novo ticket)
 ```
@@ -274,6 +278,8 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN
 ---
 
 ## Plano de implementação — Fases
+
+> Estado auditado em 2026-06-02 com varredura completa de frontend + backend.
 
 ### Fase 1 — Fundação ✅
 - [x] Instalar dependências: Tailwind, shadcn/ui, TanStack Query, Zustand, React Router v6, Axios, React Hook Form, Zod
@@ -289,37 +295,83 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN
 - [x] Protected route wrapper com redirect por role/sector
 - [x] Redirect pós-login por role
 
-### Fase 3 — Identity (Usuários) ✅
+### Fase 3 — Identity (Usuários) ⚠️ BUGS CRÍTICOS
 - [x] Listagem de usuários com filtro por sector/role
-- [x] Formulário criação de usuário
-- [x] Troca de senha
+- [x] Formulário criação de usuário — UI criada, mas rota diverge do backend (ver Divergências D2)
+- [x] Troca de senha — UI criada, mas rota e campo divergem do backend (ver Divergências D3)
 - [x] Delete com confirmação
 - [x] Componente `<RoleGuard>` para controle de visibilidade por role
 
-### Fase 4 — Funnel ✅
+### Fase 4 — Funnel ⚠️ PARCIAL
 - [x] Listagem e cadastro de clientes
 - [x] Busca por nome e CPF (client-side)
 - [x] Kanban de tickets por `TicketStatus` com drag-and-drop (`@dnd-kit`)
 - [x] Card de ticket com detalhes e ações
 - [x] Timeline de logs de contato dentro do ticket
 - [x] Formulário de novo log com `ContactChannel` + data/hora
+- [ ] Tipo `LeadTicket` incompleto — faltam `procedurePerformedAt`, `returnScheduledAt` em `src/types/models.ts`
+- [ ] Tipo `ContactLog` incompleto — faltam `statusBefore`, `statusAfter` em `src/types/models.ts`
+- [ ] Enum `POST_PROCEDURE` ausente em `src/types/enums.ts`
 
-### Fase 5 — Commercial
-- [ ] Criação de deal vinculado ao ticket (lista de procedimentos)
-- [ ] Edição de deal
-- [ ] Fluxo de desconto
-- [ ] Fechamento de deal com seleção de forma de pagamento
-- [ ] Histórico de versões do deal
-- [ ] Configurações admin: RecycleConfig, BonusConfig, AdsInvestment
+### Fase 5 — Commercial ⚠️ PARCIAL (estrutura criada, bugs impedem uso)
+- [x] Arquivos criados: `commercial.service.ts`, `commercial.queries.ts`, `deal.schema.ts`, `DealsPage.tsx`, `DealSheet.tsx`, `ProcedureListEditor.tsx`
+- [ ] Verificar mapeamento real das rotas de deal no backend (ver Divergências D1)
+- [ ] Tipos monetários incorretos — `tableValue`, `totalValue`, `discountPct`, `finalValue` como `number`; backend serializa `BigDecimal` como string (ver Divergências D5)
+- [ ] Fluxo de desconto — UI pendente
+- [ ] Fechamento de deal com seleção de forma de pagamento — UI pendente
+- [ ] Histórico de versões do deal — UI pendente
+- [ ] Config (ADM_SYSTEM): leitura GET de RecycleConfig, BonusConfig, AdsInvestment não implementada
 
-### Fase 6 — Analytics
-- [ ] Dashboard global com filtro de período (`from`/`to`)
-- [ ] Gráfico de ROI por canal de Ads (um canal por vez)
-- [ ] Funil de conversão por estágio/setor
-- [ ] Drop-off por setor
-- [ ] Ranking de performance
-- [ ] Tela de performance individual
-- [ ] Cálculo de bônus por período (`periodRef: YYYY-MM`)
+### Fase 6 — Analytics ✅ (implementado fora do plano original)
+- [x] Dashboard global com filtro de período (`from`/`to`)
+- [x] Gráfico de ROI por canal de Ads (um canal por vez)
+- [x] Funil de conversão por estágio/setor
+- [x] Drop-off por setor
+- [x] Ranking de performance
+- [x] Tela de performance individual
+- [ ] Bug: `/analytics/bonus/{id}` — frontend espera `number`, confirmar se backend retorna BigDecimal puro ou objeto (ver Divergências D6)
+- [ ] Cálculo de bônus por período (`periodRef: YYYY-MM`) — verificar após D6
+
+---
+
+## Divergências conhecidas frontend ↔ backend
+
+> Levantadas em 2026-06-02. Resolver antes de qualquer QA ou deploy.
+
+### D1 — Rotas de Deal (verificar)
+O CLAUDE.md especifica `/api/v1/deal/` (singular). Confirmar com o controller Java se o mapeamento é `/deal` ou `/deals` antes de corrigir o frontend.
+- Arquivo frontend: `src/modules/commercial/commercial.service.ts`
+- Arquivo backend: `modules/commercial/api/DealController.java`
+
+### D2 — Rota de criação de usuário
+- **Spec/Frontend:** `POST /api/v1/users/create`
+- **Backend real:** `POST /api/v1/users` (sem o suffix `/create`)
+- **Correção:** atualizar `users.service.ts` para chamar `/api/v1/users`
+
+### D3 — Rota de troca de senha
+- **Spec/Frontend:** `PATCH /api/v1/users/updatePassword/{username}/passwordHash` com body `{ username, oldPassword, newPasswordHash }`
+- **Backend real:** `PATCH /api/v1/users/{username}/newPassword` com body diferente
+- **Correção:** verificar exato mapeamento no `UserController.java` e alinhar `users.service.ts`
+
+### D4 — Enum `POST_PROCEDURE` ausente no frontend
+- **Arquivo:** `src/types/enums.ts` — adicionar `POST_PROCEDURE` ao `TicketStatus`
+- **Risco:** se backend enviar esse status, o Kanban quebra silenciosamente
+
+### D5 — Tipos monetários: `number` vs `BigDecimal`
+- **Problema:** `tableValue`, `totalValue`, `discountPct`, `finalValue` definidos como `number` no frontend
+- **Risco:** Java serializa `BigDecimal` como string JSON em alguns contextos; operações aritméticas no frontend podem perder precisão (ex: 100.10 + 0.10 ≠ 100.20 em IEEE 754)
+- **Correção recomendada:** manter como `number` no TS (JSON padrão serializa BigDecimal como número), mas nunca fazer aritmética no frontend — deixar o backend calcular `totalValue` e `finalValue`
+- **Arquivos:** `src/types/models.ts`, `src/modules/commercial/deal.schema.ts`
+
+### D6 — Analytics bonus: tipo de retorno
+- **Spec:** `GET /api/v1/analytics/bonus/{id}` → `BigDecimal (número puro)`
+- **A verificar:** confirmar se o controller retorna `ResponseEntity<BigDecimal>` ou `ResponseEntity<BonusResultDTO>`
+- **Arquivo frontend:** `src/modules/analytics/analytics.service.ts`
+
+### D7 — Campos de ContactLog ausentes no tipo frontend
+- **Backend retorna:** `statusBefore: TicketStatus`, `statusAfter: TicketStatus`
+- **Frontend não mapeia** esses campos em `src/types/models.ts`
+- **Impacto:** timeline de status não mostra transições do ticket
 
 ---
 

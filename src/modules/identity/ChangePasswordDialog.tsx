@@ -9,9 +9,9 @@ import { Button } from '@/components/ui/button'
 
 const changePasswordSchema = z.object({
   oldPassword: z.string().min(1, 'Informe a senha atual'),
-  newPasswordHash: z.string().min(8, 'Mínimo 8 caracteres'),
+  newPassword: z.string().min(8, 'Mínimo 8 caracteres'),
   confirm: z.string(),
-}).refine((d) => d.newPasswordHash === d.confirm, {
+}).refine((d) => d.newPassword === d.confirm, {
   message: 'Senhas não conferem',
   path: ['confirm'],
 })
@@ -29,7 +29,7 @@ export default function ChangePasswordDialog({ open, onOpenChange, username }: C
 
   const form = useForm<ChangePasswordFormData>({
     resolver: zodResolver(changePasswordSchema),
-    defaultValues: { oldPassword: '', newPasswordHash: '', confirm: '' },
+    defaultValues: { oldPassword: '', newPassword: '', confirm: '' },
   })
 
   async function onSubmit(data: ChangePasswordFormData) {
@@ -38,7 +38,7 @@ export default function ChangePasswordDialog({ open, onOpenChange, username }: C
       data: {
         username,
         oldPassword: data.oldPassword,
-        newPasswordHash: data.newPasswordHash,
+        newPassword: data.newPassword,
       },
     })
     form.reset()
@@ -61,7 +61,7 @@ export default function ChangePasswordDialog({ open, onOpenChange, username }: C
               </FormItem>
             )} />
 
-            <FormField control={form.control} name="newPasswordHash" render={({ field }) => (
+            <FormField control={form.control} name="newPassword" render={({ field }) => (
               <FormItem>
                 <FormLabel>Nova senha</FormLabel>
                 <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>

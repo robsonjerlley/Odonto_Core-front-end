@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PaymentMethod } from '@/types/enums'
 
 export const procedureSchema = z.object({
   name: z.string().min(1, 'Nome obrigatório'),
@@ -20,7 +21,10 @@ export const discountSchema = z.object({
 })
 
 export const closeDealSchema = z.object({
-  paymentMethod: z.string().min(1, 'Selecione a forma de pagamento'),
+  paymentMethod: z.enum(
+    Object.values(PaymentMethod) as [PaymentMethod, ...PaymentMethod[]],
+    { message: 'Selecione a forma de pagamento' },
+  ),
 })
 
 export type DealFormInput = z.input<typeof dealFormSchema>

@@ -1,7 +1,7 @@
 import type {
     Role, Sector,
     TicketStatus, AdsChannel,
-    ContactChannel, CustomerSource
+    ContactChannel, CustomerSource, PaymentMethod
 } from './enums'
 
 export interface DataRangeDTO {
@@ -51,6 +51,8 @@ export interface LeadTicket {
     closedAt?: string
     recycledAt?: string
     previousTicketId?: string
+    procedurePerformedAt?: string
+    returnScheduledAt?: string
     createdBy: string
     createdAt: string
     updatedAt: string
@@ -88,7 +90,7 @@ export interface Deal {
     discountPct?: number
     discountApprovedBy?: string
     finalValue?: number
-    paymentMethod?: string
+    paymentMethod?: PaymentMethod
     closedBy?: string
     closedAt?: string
     archived: boolean
@@ -109,6 +111,10 @@ export interface DealHistory {
 export interface DealDetail {
     deal: Deal
     history: DealHistory[]
+}
+
+export interface BonusResultDTO {
+    value: number
 }
 
 // Analytics

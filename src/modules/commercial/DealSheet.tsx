@@ -18,7 +18,7 @@ import {
   type CloseDealFormData,
 } from './deal.schema'
 import ProcedureListEditor from './ProcedureListEditor'
-import { SECTOR_LABELS } from '@/lib/labels'
+import { SECTOR_LABELS, PAYMENT_METHOD_LABELS, PAYMENT_METHOD_OPTIONS } from '@/lib/labels'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
@@ -27,8 +27,6 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { LeadTicket, Customer, Deal, DealHistory } from '@/types/models'
-
-const PAYMENT_METHODS = ['Pix', 'Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'Transferência', 'Financiamento']
 
 function currency(value: number | undefined | null): string {
   if (value == null) return '—'
@@ -166,7 +164,6 @@ function CloseDealDialog({ deal, ticketId, open, onOpenChange }: CloseDealDialog
 
   const form = useForm<CloseDealFormData>({
     resolver: zodResolver(closeDealSchema),
-    defaultValues: { paymentMethod: '' },
   })
 
   async function onSubmit(data: CloseDealFormData) {
@@ -214,8 +211,8 @@ function CloseDealDialog({ deal, ticketId, open, onOpenChange }: CloseDealDialog
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {PAYMENT_METHODS.map((m) => (
-                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                      {PAYMENT_METHOD_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -423,7 +420,9 @@ export default function DealSheet({ ticket, customer, open, onOpenChange }: Deal
                   <div className="rounded-lg border p-3 space-y-1 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Forma de pagamento</span>
-                      <span className="font-medium">{deal.paymentMethod}</span>
+                      <span className="font-medium">
+                        {deal.paymentMethod ? PAYMENT_METHOD_LABELS[deal.paymentMethod] : '—'}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Fechado em</span>
