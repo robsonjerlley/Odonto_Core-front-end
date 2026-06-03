@@ -1,5 +1,5 @@
 import api from '@/lib/api'
-import type { Customer, LeadTicket, ContactLog } from '@/types/models'
+import type { Customer, LeadTicket, ContactLog, Page } from '@/types/models'
 import type { CustomerSource, AdsChannel, Sector, TicketStatus, ContactChannel } from '@/types/enums'
 
 export interface CustomerCreateDTO {
@@ -14,10 +14,12 @@ export interface CustomerCreateDTO {
 }
 
 export interface CustomerUpdateDTO {
-  name?: string
-  phone?: string
+  id: string
+  name: string
+  cpf: string
+  phone: string
+  phone2?: string
   email?: string
-  adCampaign?: string
 }
 
 export interface TicketCreateDTO {
@@ -40,7 +42,7 @@ export interface ContactLogCreateDTO {
 
 export const funnelService = {
   findAllCustomers: () =>
-    api.get<Customer[]>('/api/v1/customers').then((r) => r.data),
+    api.get<Page<Customer>>('/api/v1/customers').then((r) => r.data.content),
 
   findCustomerById: (id: string) =>
     api.get<Customer>(`/api/v1/customers/${id}`).then((r) => r.data),
@@ -58,13 +60,13 @@ export const funnelService = {
     api.delete(`/api/v1/customers/${id}`),
 
   findAllTickets: () =>
-    api.get<LeadTicket[]>('/api/v1/tickets').then((r) => r.data),
+    api.get<Page<LeadTicket>>('/api/v1/tickets').then((r) => r.data.content),
 
   findTicketById: (id: string) =>
     api.get<LeadTicket>(`/api/v1/tickets/${id}`).then((r) => r.data),
 
   findTicketsByCustomer: (customerId: string) =>
-    api.get<LeadTicket[]>(`/api/v1/tickets/findByCustomer/${customerId}`).then((r) => r.data),
+    api.get<Page<LeadTicket>>('/api/v1/tickets', { params: { customerId } }).then((r) => r.data.content),
 
   createTicket: (dto: TicketCreateDTO) =>
     api.post<LeadTicket>('/api/v1/tickets', dto).then((r) => r.data),
@@ -72,15 +74,9 @@ export const funnelService = {
   changeTicketStatus: (id: string, dto: TicketChangeStatusDTO) =>
     api.patch<LeadTicket>(`/api/v1/tickets/${id}/status`, dto).then((r) => r.data),
 
-  removeTicket: (id: string) =>
-    api.delete(`/api/v1/tickets/${id}`),
-
   findContactLogsByTicket: (ticketId: string) =>
-    api.get<ContactLog[]>(`/api/v1/contact-logs/findByTicketId/${ticketId}`).then((r) => r.data),
+    api.get<Page<ContactLog>>('/api/v1/contact-logs', { params: { ticketId } }).then((r) => r.data.content),
 
   createContactLog: (dto: ContactLogCreateDTO) =>
     api.post<ContactLog>('/api/v1/contact-logs', dto).then((r) => r.data),
-
-  removeContactLog: (id: string) =>
-    api.delete(`/api/v1/contact-logs/${id}`),
 }

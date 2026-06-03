@@ -54,26 +54,10 @@ export function useChangeTicketStatus() {
   })
 }
 
-export function useRemoveTicket() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (id: string) => funnelService.removeTicket(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: TICKETS_KEY }),
-  })
-}
-
 export function useCreateContactLog(ticketId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (dto: ContactLogCreateDTO) => funnelService.createContactLog(dto),
-    onSuccess: () => qc.invalidateQueries({ queryKey: contactLogsKey(ticketId) }),
-  })
-}
-
-export function useRemoveContactLog(ticketId: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (id: string) => funnelService.removeContactLog(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: contactLogsKey(ticketId) }),
   })
 }

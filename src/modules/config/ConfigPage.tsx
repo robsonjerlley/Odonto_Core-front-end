@@ -14,7 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 // ─── Recycle Config ────────────────────────────────────────────────────────────
 
 const recycleSchema = z.object({
-  sector: z.enum(Object.values(Sector) as [Sector, ...Sector[]]).optional(),
   afterDays: z.coerce.number().int().min(1, 'Mínimo 1 dia'),
 })
 type RecycleFormInput = z.input<typeof recycleSchema>
@@ -30,7 +29,6 @@ function RecycleConfigCard() {
   async function onSubmit(data: RecycleForm) {
     try {
       const dto: RecycleConfigDTO = { afterDays: data.afterDays }
-      if (data.sector) dto.sector = data.sector
       await configService.setRecycleConfig(dto)
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
@@ -50,24 +48,6 @@ function RecycleConfigCard() {
         </p>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="sector" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Setor (deixe em branco para configuração global)</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                  <FormControl>
-                    <SelectTrigger><SelectValue placeholder="Global (todos os setores)" /></SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="">Global</SelectItem>
-                    {Object.values(Sector).map((s) => (
-                      <SelectItem key={s} value={s}>{SECTOR_LABELS[s]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )} />
-
             <FormField control={form.control} name="afterDays" render={({ field }) => (
               <FormItem>
                 <FormLabel>Prazo para reciclagem (dias)</FormLabel>

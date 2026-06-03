@@ -75,7 +75,6 @@ export default function UserListPage() {
             <TableHead>Usuário</TableHead>
             <TableHead>Setor</TableHead>
             <TableHead>Role</TableHead>
-            <TableHead>Status</TableHead>
             <TableHead />
           </TableRow>
         </TableHeader>
@@ -117,11 +116,6 @@ function UserRow({ user, onDelete, onChangePassword }: UserRowProps) {
       <TableCell className="text-muted-foreground">{user.username}</TableCell>
       <TableCell><Badge variant="outline">{SECTOR_LABELS[user.sector]}</Badge></TableCell>
       <TableCell><Badge>{ROLE_LABELS[user.role]}</Badge></TableCell>
-      <TableCell>
-        <Badge variant={user.active ? 'default' : 'secondary'}>
-          {user.active ? 'Ativo' : 'Inativo'}
-        </Badge>
-      </TableCell>
       <TableCell className="text-right space-x-2">
         <Button variant="outline" size="sm" onClick={onChangePassword}>
           Trocar senha

@@ -38,7 +38,7 @@ export const commercialService = {
     api.patch<Deal>(`/api/v1/deals/${id}/discount`, dto).then((r) => r.data),
 
   closeDeal: (id: string, dto: CloseDealDTO) =>
-    api.patch<Deal>(`/api/v1/deals/${id}/closeDeal`, dto).then((r) => r.data),
+    api.patch<Deal>(`/api/v1/deals/${id}/status`, dto).then((r) => r.data),
 
   getDealWithHistory: (id: string) =>
     api.get<DealDetail>(`/api/v1/deals/${id}/dealHistory`).then((r) => r.data),

@@ -1,6 +1,6 @@
 import api from '@/lib/api'
 import type { Sector, Role } from '@/types/enums'
-import type { User } from '@/types/models'
+import type { User, Page } from '@/types/models'
 
 export interface CreateUserDTO {
     name: string
@@ -26,13 +26,16 @@ export interface UpdatePasswordDTO {
 
 export const usersService = {
     findAll: () =>
-        api.get<User[]>('/api/v1/users').then((r) => r.data),
+        api.get<Page<User>>('/api/v1/users').then((r) => r.data.content),
+
+    findByUsername: (username: string) =>
+        api.get<User>(`/api/v1/users/username/${username}`).then((r) => r.data),
 
     findBySector: (sector: Sector) =>
-        api.get<User[]>(`/api/v1/users/findBySector/${sector}`).then((r) => r.data),
+        api.get<Page<User>>('/api/v1/users', { params: { sector } }).then((r) => r.data.content),
 
     findBySectorAndRole: (sector: Sector, role: Role) =>
-        api.get<User[]>(`/api/v1/users/findBySectorAndRole/${sector}/${role}`).then((r) => r.data),
+        api.get<Page<User>>('/api/v1/users', { params: { sector, role } }).then((r) => r.data.content),
 
     create: (data: CreateUserDTO) => {
         const payload: CreateUserPayload = {

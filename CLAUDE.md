@@ -336,42 +336,42 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → P
 
 ## Divergências conhecidas frontend ↔ backend
 
-> Levantadas em 2026-06-02. Resolver antes de qualquer QA ou deploy.
+> Levantadas em 2026-06-02. **Resolvidas em 2026-06-03** com varredura dos controllers reais do backend (`alinhamento frontend ↔ backend`).
 
-### D1 — Rotas de Deal (verificar)
-O CLAUDE.md especifica `/api/v1/deal/` (singular). Confirmar com o controller Java se o mapeamento é `/deal` ou `/deals` antes de corrigir o frontend.
-- Arquivo frontend: `src/modules/commercial/commercial.service.ts`
-- Arquivo backend: `modules/commercial/api/DealController.java`
+### D0 — Listagens paginadas (`Page<T>`) ✅ RESOLVIDO — *causa principal do app quebrado*
+- **Backend real:** `GET /users`, `/customers`, `/tickets`, `/contact-logs` retornam **`Page<T>` do Spring Data** (`{ content: [], totalElements, ... }`), **não arrays**. Os filtros viraram **query params** (`?sector=&role=`, `?customerId=&status=&assignedTo=`, `?name=&phone=&adChannel=`, `?ticketId=`).
+- **Sintoma:** o frontend tratava `r.data` como array → `.map`/`.filter` quebravam todas as telas principais.
+- **Correção:** tipo `Page<T>` em `src/types/models.ts`; services desempacotam `r.data.content`; filtros antigos por path (`findBySector/{}`, `findByCustomer/{}`, `findByTicketId/{}`) trocados por query params.
 
-### D2 — Rota de criação de usuário
-- **Spec/Frontend:** `POST /api/v1/users/create`
-- **Backend real:** `POST /api/v1/users` (sem o suffix `/create`)
-- **Correção:** atualizar `users.service.ts` para chamar `/api/v1/users`
+### D1 — Rotas de Deal ✅ RESOLVIDO
+- **Backend real:** base **`/api/v1/deals`** (plural); `findByTicket` = `GET /deals/ticketId/{ticketId}` (204 quando não há deal); fechamento = **`PATCH /deals/{id}/status`** (não `/closeDeal`).
+- **Correção:** `closeDeal` aponta para `/{id}/status` em `commercial.service.ts`.
 
-### D3 — Rota de troca de senha
-- **Spec/Frontend:** `PATCH /api/v1/users/updatePassword/{username}/passwordHash` com body `{ username, oldPassword, newPasswordHash }`
-- **Backend real:** `PATCH /api/v1/users/{username}/newPassword` com body diferente
-- **Correção:** verificar exato mapeamento no `UserController.java` e alinhar `users.service.ts`
+### D2 — Rota de criação de usuário ✅ RESOLVIDO
+- **Backend real:** `POST /api/v1/users` com body `{ name, username, passwordHash, sector, role }`. Frontend já alinhado.
 
-### D4 — Enum `POST_PROCEDURE` ausente no frontend
-- **Arquivo:** `src/types/enums.ts` — adicionar `POST_PROCEDURE` ao `TicketStatus`
-- **Risco:** se backend enviar esse status, o Kanban quebra silenciosamente
+### D3 — Rota de troca de senha ✅ RESOLVIDO
+- **Backend real:** `PATCH /api/v1/users/{username}/newPassword` com body `{ username, oldPassword, newPassword }` (todos `@NotBlank`). Frontend já alinhado.
+- **Login:** busca do usuário pós-login usa `GET /api/v1/users/username/{username}` (não `findByUsername/{}`).
 
-### D5 — Tipos monetários: `number` vs `BigDecimal`
-- **Problema:** `tableValue`, `totalValue`, `discountPct`, `finalValue` definidos como `number` no frontend
-- **Risco:** Java serializa `BigDecimal` como string JSON em alguns contextos; operações aritméticas no frontend podem perder precisão (ex: 100.10 + 0.10 ≠ 100.20 em IEEE 754)
-- **Correção recomendada:** manter como `number` no TS (JSON padrão serializa BigDecimal como número), mas nunca fazer aritmética no frontend — deixar o backend calcular `totalValue` e `finalValue`
-- **Arquivos:** `src/types/models.ts`, `src/modules/commercial/deal.schema.ts`
+### D4 — Enum `POST_PROCEDURE` ✅ RESOLVIDO — presente em `src/types/enums.ts`.
 
-### D6 — Analytics bonus: tipo de retorno
-- **Spec:** `GET /api/v1/analytics/bonus/{id}` → `BigDecimal (número puro)`
-- **A verificar:** confirmar se o controller retorna `ResponseEntity<BigDecimal>` ou `ResponseEntity<BonusResultDTO>`
-- **Arquivo frontend:** `src/modules/analytics/analytics.service.ts`
+### D5 — Tipos monetários (`number`) ✅ MANTIDO
+- Backend serializa `BigDecimal` como número JSON (Jackson padrão). Mantido `number` no TS; aritmética no frontend é só para exibição — totais/finais vêm calculados do backend.
 
-### D7 — Campos de ContactLog ausentes no tipo frontend
-- **Backend retorna:** `statusBefore: TicketStatus`, `statusAfter: TicketStatus`
-- **Frontend não mapeia** esses campos em `src/types/models.ts`
-- **Impacto:** timeline de status não mostra transições do ticket
+### D6 — Analytics bonus ✅ RESOLVIDO
+- **Backend real:** `GET /api/v1/analytics/bonus/{id}?periodRef=YYYY-MM` → **`BonusResultDTO { value: BigDecimal }`** (objeto, não número puro). Frontend lê `r.data.value`.
+
+### D7 — Campos de ContactLog ✅ RESOLVIDO — `statusBefore`/`statusAfter` mapeados em `models.ts` e exibidos na timeline.
+
+### D8 — `UserResponseDTO` enxuto ✅ RESOLVIDO
+- **Backend real:** retorna só `{ id, name, username, sector, role }` — **sem `active`/`createdAt`/`updatedAt`**. Tipo `User` ajustado e coluna "Status" removida da `UserListPage`.
+
+### D9 — Endpoints inexistentes removidos do frontend ✅ RESOLVIDO
+- Backend **não tem** `DELETE /tickets/{id}` nem `DELETE /contact-logs/{id}`. Removidos `removeTicket`/`removeContactLog` e o botão de excluir log na `TicketDetailSheet`.
+- `RecycleConfigRequestDTO` aceita **apenas `afterDays`** (sem `sector`) — campo de setor removido do form de reciclagem.
+
+> Observação: a seção "API — Endpoints completos" acima ainda descreve as rotas antigas (path-based, sem paginação). Os controllers reais em `B:\projects\odontocore.crm` são a fonte da verdade; ao mexer num módulo, confira o controller correspondente.
 
 ---
 

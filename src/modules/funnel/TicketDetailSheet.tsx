@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { useContactLogs, useRemoveContactLog } from './funnel.queries'
+import { useContactLogs } from './funnel.queries'
 import AddContactLogDialog from './AddContactLogDialog'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
@@ -22,7 +22,6 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
   const [addLogOpen, setAddLogOpen] = useState(false)
 
   const { data: logs = [] } = useContactLogs(ticket?.id ?? '')
-  const removeLog = useRemoveContactLog(ticket?.id ?? '')
 
   if (!ticket) return null
 
@@ -85,28 +84,18 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
                     .map((log) => (
                       <li key={log.id} className="ml-4">
                         <div className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full border border-background bg-primary" />
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(log.occurredAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                              {' · '}
-                              <span className="font-medium">{CONTACT_CHANNEL_LABELS[log.channel]}</span>
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(log.occurredAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                            {' · '}
+                            <span className="font-medium">{CONTACT_CHANNEL_LABELS[log.channel]}</span>
+                          </p>
+                          <p className="text-sm mt-0.5">{log.note}</p>
+                          {log.statusBefore && log.statusAfter && log.statusBefore !== log.statusAfter && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {TICKET_STATUS_LABELS[log.statusBefore]} → {TICKET_STATUS_LABELS[log.statusAfter]}
                             </p>
-                            <p className="text-sm mt-0.5">{log.note}</p>
-                            {log.statusBefore && log.statusAfter && log.statusBefore !== log.statusAfter && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {TICKET_STATUS_LABELS[log.statusBefore]} → {TICKET_STATUS_LABELS[log.statusAfter]}
-                              </p>
-                            )}
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive shrink-0"
-                            onClick={() => removeLog.mutate(log.id)}
-                          >
-                            ×
-                          </Button>
+                          )}
                         </div>
                       </li>
                     ))}

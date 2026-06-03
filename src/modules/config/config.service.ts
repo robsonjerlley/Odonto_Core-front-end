@@ -1,8 +1,8 @@
 import api from '@/lib/api'
 import type { Sector, Role, AdsChannel } from '@/types/enums'
 
+// Backend RecycleConfigRequestDTO aceita apenas afterDays
 export interface RecycleConfigDTO {
-  sector?: Sector
   afterDays: number
 }
 

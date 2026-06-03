@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import api from '@/lib/api'
+import { usersService } from '@/modules/identity/users.service'
 import type { User } from '@/types/models'
 import { Role } from '@/types/enums'
 
@@ -50,7 +51,7 @@ export default function LoginPage() {
 
         login(null, authData.token)
 
-        const { data: userData } = await api.get<User>(`/api/v1/users/findByUsername/${data.username}`)
+        const userData = await usersService.findByUsername(data.username)
 
         login(userData, authData.token)
         navigate(getDefaultRoute(userData))

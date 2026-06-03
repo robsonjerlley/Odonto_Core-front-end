@@ -9,18 +9,28 @@ export interface DataRangeDTO {
     to: string
 }
 
+// Spring Data Page — formato de resposta paginada do backend
+export interface Page<T> {
+    content: T[]
+    totalElements: number
+    totalPages: number
+    number: number
+    size: number
+    first: boolean
+    last: boolean
+    numberOfElements: number
+    empty: boolean
+}
+
 // Identity
 
+// Backend UserResponseDTO retorna apenas { id, name, username, sector, role }
 export interface User {
     id: string
     name: string
     username: string
     sector: Sector
     role: Role
-    active: boolean
-    createdBy?: string
-    createdAt: string
-    updatedAt: string 
 }
 
 // Funnel
