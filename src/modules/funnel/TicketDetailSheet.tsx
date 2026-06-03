@@ -1,15 +1,21 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { useContactLogs } from './funnel.queries'
+import { Trophy, XCircle } from 'lucide-react'
+import { useContactLogs, useChangeTicketStatus } from './funnel.queries'
 import AddContactLogDialog from './AddContactLogDialog'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import { TicketStatus } from '@/types/enums'
 import type { LeadTicket, Customer } from '@/types/models'
-import { SECTOR_LABELS, TICKET_STATUS_LABELS, CONTACT_CHANNEL_LABELS } from '@/lib/labels'
+import {
+  SECTOR_LABELS, TICKET_STATUS_LABELS, TICKET_STATUS_COLOR,
+  CONTACT_CHANNEL_LABELS, TERMINAL_STATUSES,
+} from '@/lib/labels'
 
 interface TicketDetailSheetProps {
   ticket: LeadTicket | null
@@ -20,8 +26,27 @@ interface TicketDetailSheetProps {
 
 export default function TicketDetailSheet({ ticket, customer, open, onOpenChange }: TicketDetailSheetProps) {
   const [addLogOpen, setAddLogOpen] = useState(false)
+  const [lossOpen, setLossOpen] = useState(false)
+  const [lossReason, setLossReason] = useState('')
 
   const { data: logs = [] } = useContactLogs(ticket?.id ?? '')
+  const changeStatus = useChangeTicketStatus()
+
+  const isTerminal = ticket ? TERMINAL_STATUSES.includes(ticket.status) : false
+
+  function markStatus(status: TicketStatus, reason?: string) {
+    if (!ticket) return
+    changeStatus.mutate(
+      { id: ticket.id, status, lossReason: reason },
+      {
+        onSuccess: () => {
+          setLossOpen(false)
+          setLossReason('')
+          onOpenChange(false)
+        },
+      },
+    )
+  }
 
   if (!ticket) return null
 
@@ -37,7 +62,9 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
                 <p className="text-muted-foreground">Status</p>
-                <Badge variant="outline">{TICKET_STATUS_LABELS[ticket.status]}</Badge>
+                <Badge variant="outline" className={TICKET_STATUS_COLOR[ticket.status]}>
+                  {TICKET_STATUS_LABELS[ticket.status]}
+                </Badge>
               </div>
               <div>
                 <p className="text-muted-foreground">Setor</p>
@@ -66,6 +93,61 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
                 </>
               )}
             </div>
+
+            {!isTerminal && (
+              <div className="border-t pt-4 space-y-3">
+                <h3 className="font-medium">Ações</h3>
+                {!lossOpen ? (
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      className="bg-emerald-600 text-white hover:bg-emerald-700"
+                      disabled={changeStatus.isPending}
+                      onClick={() => markStatus(TicketStatus.WIN)}
+                    >
+                      <Trophy className="size-3.5" />
+                      Marcar como ganho
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={changeStatus.isPending}
+                      onClick={() => setLossOpen(true)}
+                    >
+                      <XCircle className="size-3.5" />
+                      Marcar como perdido
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                    <label className="text-sm font-medium">Motivo da perda (opcional)</label>
+                    <Textarea
+                      value={lossReason}
+                      onChange={(e) => setLossReason(e.target.value)}
+                      placeholder="Ex: optou por outra clínica, sem retorno…"
+                      rows={2}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setLossOpen(false); setLossReason('') }}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={changeStatus.isPending}
+                        onClick={() => markStatus(TicketStatus.LOSS, lossReason || undefined)}
+                      >
+                        Confirmar perda
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="border-t pt-4">
               <div className="flex items-center justify-between mb-3">

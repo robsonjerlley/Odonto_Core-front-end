@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTickets, useCustomers } from '@/modules/funnel/funnel.queries'
 import { TicketStatus } from '@/types/enums'
-import { TICKET_STATUS_LABELS } from '@/lib/labels'
+import { TICKET_STATUS_LABELS, TICKET_STATUS_COLOR } from '@/lib/labels'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
@@ -14,12 +14,6 @@ const COMMERCIAL_STATUSES = [
   TicketStatus.WIN,
   TicketStatus.LOSS,
 ] as const
-
-const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  NEGOTIATION: 'default',
-  WIN: 'secondary',
-  LOSS: 'destructive',
-}
 
 export default function DealsPage() {
   const { data: tickets = [], isLoading } = useTickets()
@@ -43,7 +37,12 @@ export default function DealsPage() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-semibold">Comercial</h1>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Negociações</h1>
+        <p className="text-sm text-muted-foreground">
+          Orçamentos e fechamento de tratamentos em negociação.
+        </p>
+      </div>
 
       {commercialTickets.length === 0 ? (
         <p className="text-muted-foreground text-sm">
@@ -73,7 +72,7 @@ export default function DealsPage() {
                       {customer?.phone ?? '—'}
                     </td>
                     <td className="p-3">
-                      <Badge variant={STATUS_VARIANT[ticket.status] ?? 'outline'}>
+                      <Badge variant="outline" className={TICKET_STATUS_COLOR[ticket.status]}>
                         {TICKET_STATUS_LABELS[ticket.status]}
                       </Badge>
                     </td>

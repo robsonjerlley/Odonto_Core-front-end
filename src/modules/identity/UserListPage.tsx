@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Plus } from 'lucide-react'
 import { useUsers, useRemoveUser } from './users.queries'
 import { Sector, Role } from '@/types/enums'
 import { SECTOR_LABELS, ROLE_LABELS } from '@/lib/labels'
@@ -36,9 +37,17 @@ export default function UserListPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Usuários</h1>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Equipe</h1>
+          <p className="text-sm text-muted-foreground">
+            Gestão de usuários, setores e perfis de acesso.
+          </p>
+        </div>
         <RoleGuard allowed={[Role.ADM_SYSTEM]}>
-          <Button onClick={() => setCreateOpen(true)}>Novo usuário</Button>
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="size-4" />
+            Novo usuário
+          </Button>
         </RoleGuard>
       </div>
 

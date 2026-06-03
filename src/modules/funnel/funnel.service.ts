@@ -31,6 +31,8 @@ export interface TicketCreateDTO {
 
 export interface TicketChangeStatusDTO {
   status: TicketStatus
+  returnScheduledAt?: string
+  lossReason?: string
 }
 
 export interface ContactLogCreateDTO {

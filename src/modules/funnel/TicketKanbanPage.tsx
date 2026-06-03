@@ -5,20 +5,15 @@ import { useTickets, useCustomers, useChangeTicketStatus } from './funnel.querie
 import KanbanColumn from './KanbanColumn'
 import TicketDetailSheet from './TicketDetailSheet'
 import CreateTicketDialog from './CreateTicketDialog'
+import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { LeadTicket } from '@/types/models'
-import { TicketStatus } from '@/types/enums'
+import type { TicketStatus } from '@/types/enums'
+import { KANBAN_COLUMN_ORDER, TICKET_STATUS_LABELS } from '@/lib/labels'
 
-const COLUMNS: Array<{ status: TicketStatus; label: string }> = [
-  { status: TicketStatus.NEW,           label: 'Novo' },
-  { status: TicketStatus.IN_CONTACT,    label: 'Em contato' },
-  { status: TicketStatus.SCHEDULED,     label: 'Agendado' },
-  { status: TicketStatus.IN_EVALUATION, label: 'Em avaliação' },
-  { status: TicketStatus.NEGOTIATION,   label: 'Negociação' },
-  { status: TicketStatus.WIN,           label: 'Ganho' },
-  { status: TicketStatus.LOSS,          label: 'Perdido' },
-  { status: TicketStatus.PENDING,       label: 'Pendente' },
-]
+const COLUMNS: Array<{ status: TicketStatus; label: string }> = KANBAN_COLUMN_ORDER.map(
+  (status) => ({ status, label: TICKET_STATUS_LABELS[status] }),
+)
 
 export default function TicketKanbanPage() {
   const { data: tickets = [] } = useTickets()
@@ -53,8 +48,16 @@ export default function TicketKanbanPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Funil de vendas</h1>
-        <Button onClick={() => setCreateOpen(true)}>Novo ticket</Button>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Pipeline</h1>
+          <p className="text-sm text-muted-foreground">
+            Acompanhe e mova os leads pelas etapas do funil.
+          </p>
+        </div>
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="size-4" />
+          Novo ticket
+        </Button>
       </div>
 
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>

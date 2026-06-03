@@ -45,11 +45,18 @@ export function useCreateTicket() {
   })
 }
 
+interface ChangeStatusVars {
+  id: string
+  status: TicketStatus
+  lossReason?: string
+  returnScheduledAt?: string
+}
+
 export function useChangeTicketStatus() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: TicketStatus }) =>
-      funnelService.changeTicketStatus(id, { status }),
+    mutationFn: ({ id, status, lossReason, returnScheduledAt }: ChangeStatusVars) =>
+      funnelService.changeTicketStatus(id, { status, lossReason, returnScheduledAt }),
     onSuccess: () => qc.invalidateQueries({ queryKey: TICKETS_KEY }),
   })
 }

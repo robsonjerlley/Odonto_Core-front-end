@@ -14,6 +14,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { UserPerformanceResultDTO } from '@/types/models'
 import type { AnalyticsPeriod } from './analytics.service'
 
+// ─── paleta dos gráficos (alinhada aos tokens de marca) ───────────────────────
+const CHART = {
+  brand: '#0d9488',   // teal — receita / positivo
+  neutral: '#94a3b8', // slate — investimento / base
+  danger: '#f43f5e',  // rose — drop-off / perdas
+}
+
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 function currency(v: number | null | undefined) {
@@ -96,8 +103,8 @@ function AdsRoiChart({ data }: { data: { channel: string; totalInvestment: numbe
           contentStyle={{ fontSize: 12 }}
         />
         <Legend wrapperStyle={{ fontSize: 12 }} />
-        <Bar dataKey="Investimento" fill="#94a3b8" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="Receita" fill="#22c55e" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Investimento" fill={CHART.neutral} radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Receita" fill={CHART.brand} radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   )
@@ -124,7 +131,7 @@ function DropOffChart({ data }: { data: { sector: string; dropOffPct: number; en
         <YAxis tick={{ fontSize: 11 }} unit="%" domain={[0, 100]} />
         <Tooltip contentStyle={{ fontSize: 12 }} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
-        <Bar dataKey="Drop-off (%)" fill="#f87171" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Drop-off (%)" fill={CHART.danger} radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   )
@@ -333,7 +340,12 @@ export default function DashboardPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
+          <p className="text-sm text-muted-foreground">
+            Métricas de captação, conversão e performance do período.
+          </p>
+        </div>
         <PeriodFilter period={period} onApply={setPeriod} />
       </div>
 

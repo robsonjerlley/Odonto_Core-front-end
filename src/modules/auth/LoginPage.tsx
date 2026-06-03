@@ -68,10 +68,18 @@ export default function LoginPage() {
     }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>OdontoCore CRM</CardTitle>
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
+      <Card className="w-full max-w-sm shadow-lg">
+        <CardHeader className="space-y-3">
+          <div className="flex size-11 items-center justify-center rounded-xl bg-brand text-brand-foreground text-lg font-bold">
+            O
+          </div>
+          <div className="space-y-1">
+            <CardTitle className="text-xl tracking-tight">OdontoCore CRM</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Entre com suas credenciais para acessar.
+            </p>
+          </div>
         </CardHeader>
         <CardContent>
           <Form {...form}>

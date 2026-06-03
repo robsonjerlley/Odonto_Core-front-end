@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useCustomers, useRemoveCustomer } from './funnel.queries'
+import { Plus, Search } from 'lucide-react'
 import CreateCustomerDialog from './CreateCustomerDialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -41,16 +42,29 @@ export default function CustomerListPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Clientes</h1>
-        {canCreate && <Button onClick={() => setDialogOpen(true)}>Novo cliente</Button>}
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Pacientes</h1>
+          <p className="text-sm text-muted-foreground">
+            Cadastro e busca de pacientes da clínica.
+          </p>
+        </div>
+        {canCreate && (
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="size-4" />
+            Novo paciente
+          </Button>
+        )}
       </div>
 
-      <Input
-        placeholder="Buscar por nome ou CPF..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="max-w-sm"
-      />
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por nome ou CPF..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
 
       {isLoading ? (
         <p className="text-muted-foreground text-sm">Carregando...</p>

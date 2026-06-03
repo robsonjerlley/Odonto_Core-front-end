@@ -2,9 +2,23 @@ import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { CalendarClock } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import type { LeadTicket, Customer } from '@/types/models'
 import { SECTOR_LABELS } from '@/lib/labels'
+
+const STATUS_BAR: Record<string, string> = {
+  NEW: 'bg-sky-500',
+  IN_CONTACT: 'bg-teal-500',
+  SCHEDULED: 'bg-amber-500',
+  IN_EVALUATION: 'bg-teal-500',
+  NEGOTIATION: 'bg-teal-500',
+  PENDING: 'bg-amber-500',
+  WIN: 'bg-emerald-500',
+  LOSS: 'bg-rose-500',
+  RECYCLED: 'bg-slate-400',
+  POST_PROCEDURE: 'bg-violet-500',
+}
 
 interface TicketCardProps {
   ticket: LeadTicket
@@ -29,15 +43,19 @@ export default function TicketCard({ ticket, customer, onClick }: TicketCardProp
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-card border rounded-lg p-3 cursor-grab active:cursor-grabbing space-y-1.5 shadow-sm hover:shadow-md transition-shadow"
+      className="group relative cursor-grab space-y-1.5 overflow-hidden rounded-lg border bg-card p-3 pl-4 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing"
       onClick={onClick}
     >
-      <p className="font-medium text-sm leading-snug">{customer?.name ?? 'Cliente desconhecido'}</p>
+      <span
+        className={`absolute left-0 top-0 bottom-0 w-1 ${STATUS_BAR[ticket.status] ?? 'bg-muted-foreground'}`}
+      />
+      <p className="text-sm font-medium leading-snug">{customer?.name ?? 'Cliente desconhecido'}</p>
       {customer && (
         <p className="text-xs text-muted-foreground">{customer.phone}</p>
       )}
       {ticket.scheduledAt && (
-        <Badge variant="outline" className="text-xs">
+        <Badge variant="outline" className="gap-1 text-xs font-normal">
+          <CalendarClock className="size-3" />
           {format(new Date(ticket.scheduledAt), "dd/MM HH:mm", { locale: ptBR })}
         </Badge>
       )}
