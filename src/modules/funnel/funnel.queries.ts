@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { funnelService, type CustomerCreateDTO, type TicketCreateDTO, type ContactLogCreateDTO } from './funnel.service'
+import { funnelService, type CustomerCreateDTO, type CustomerUpdateDTO, type TicketCreateDTO, type ContactLogCreateDTO } from './funnel.service'
 import type { Customer, LeadTicket, ContactLog } from '@/types/models'
 import type { TicketStatus } from '@/types/enums'
 
@@ -33,6 +33,14 @@ export function useCreateCustomer() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (dto: CustomerCreateDTO) => funnelService.createCustomer(dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: CUSTOMERS_KEY }),
+  })
+}
+
+export function useUpdateCustomer(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (dto: CustomerUpdateDTO) => funnelService.updateCustomer(id, dto),
     onSuccess: () => qc.invalidateQueries({ queryKey: CUSTOMERS_KEY }),
   })
 }

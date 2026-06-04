@@ -7,7 +7,7 @@ import {
   Trophy, XCircle, CheckCircle2, CalendarClock,
   Phone, Stethoscope, Handshake, Clock, type LucideIcon,
 } from 'lucide-react'
-import { useContactLogs, useChangeTicketStatus } from './funnel.queries'
+import { useContactLogs, useChangeTicketStatus, useUpdateCustomer } from './funnel.queries'
 import { useDealForTicket, useCreateDeal } from '@/modules/commercial/commercial.queries'
 import { dealFormSchema, type DealFormInput, type DealFormData } from '@/modules/commercial/deal.schema'
 import ProcedureListEditor from '@/modules/commercial/ProcedureListEditor'
@@ -187,9 +187,12 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
   const [activeForm, setActiveForm] = useState<TicketStatus | null>(null)
   const [scheduleDate, setScheduleDate] = useState('')
   const [lossReason, setLossReason] = useState('')
+  const [cpfInput, setCpfInput] = useState('')
+  const [cpfStep, setCpfStep] = useState(false) // true = pedir CPF antes de mostrar o date picker
 
   const { data: logs = [] } = useContactLogs(ticket?.id ?? '')
   const changeStatus = useChangeTicketStatus()
+  const updateCustomer = useUpdateCustomer(ticket?.customerId ?? '')
   const role = useAuthStore((state) => state.user?.role)
   const canLogContact = usePermission('CONTACT_LOG', 'CREATE')
 
@@ -203,6 +206,8 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
     setActiveForm(null)
     setScheduleDate('')
     setLossReason('')
+    setCpfInput('')
+    setCpfStep(false)
   }
 
   function markStatus(status: TicketStatus, opts?: { lossReason?: string; returnScheduledAt?: string }) {
@@ -220,6 +225,12 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
 
   function handleAction(to: TicketStatus) {
     if (NEEDS_SCHEDULE.includes(to)) {
+      // Backend exige CPF para → SCHEDULED (§10 do contrato)
+      if (!customer?.cpf) {
+        setActiveForm(to)
+        setCpfStep(true)
+        return
+      }
       setActiveForm(to)
       return
     }
@@ -228,6 +239,24 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
       return
     }
     markStatus(to)
+  }
+
+  async function saveCpfAndProceed() {
+    if (!customer || !cpfInput.trim()) return
+    try {
+      await updateCustomer.mutateAsync({
+        id: customer.id,
+        name: customer.name,
+        cpf: cpfInput.trim(),
+        phone: customer.phone ?? '',
+        phone2: customer.phone2 ?? undefined,
+        email: customer.email ?? undefined,
+      })
+      setCpfStep(false)
+      setCpfInput('')
+    } catch {
+      /* erro exibido via toast pelo interceptor */
+    }
   }
 
   if (!ticket) return null
@@ -302,11 +331,36 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
                     Ações
                   </p>
 
-                  {/* Form inline: agendamento */}
-                  {activeForm && NEEDS_SCHEDULE.includes(activeForm) ? (
+                  {/* Form inline: CPF obrigatório antes de agendar */}
+                  {activeForm && NEEDS_SCHEDULE.includes(activeForm) && cpfStep ? (
+                    <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 space-y-2">
+                      <p className="text-sm font-medium">CPF obrigatório para agendar</p>
+                      <p className="text-xs text-muted-foreground">
+                        O backend exige CPF do paciente para confirmar o agendamento.
+                      </p>
+                      <Input
+                        placeholder="000.000.000-00"
+                        value={cpfInput}
+                        onChange={(e) => setCpfInput(e.target.value)}
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={closeForm}>
+                          Cancelar
+                        </Button>
+                        <Button
+                          size="sm"
+                          disabled={updateCustomer.isPending || !cpfInput.trim()}
+                          onClick={saveCpfAndProceed}
+                        >
+                          {updateCustomer.isPending ? 'Salvando...' : 'Salvar CPF e continuar'}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : activeForm && NEEDS_SCHEDULE.includes(activeForm) ? (
+                    /* Form inline: agendamento (CPF já preenchido) */
                     <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
                       <label className="text-sm font-medium">
-                        {activeForm === TicketStatus.SCHEDULED && ticket.status === TicketStatus.POST_PROCEDURE
+                        {ticket.status === TicketStatus.POST_PROCEDURE
                           ? 'Data do retorno'
                           : 'Data da consulta'}
                       </label>

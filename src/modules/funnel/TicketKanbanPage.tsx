@@ -8,18 +8,38 @@ import { useAuthStore } from '@/store/auth.store'
 import { canTransition } from './transitions'
 import { toast } from '@/lib/toast'
 import type { LeadTicket } from '@/types/models'
-import { TicketStatus } from '@/types/enums'
+import { TicketStatus, Role } from '@/types/enums'
 import { KANBAN_COLUMN_ORDER, TICKET_STATUS_LABELS } from '@/lib/labels'
 
-const COLUMNS: Array<{ status: TicketStatus; label: string }> = KANBAN_COLUMN_ORDER.map(
-  (status) => ({ status, label: TICKET_STATUS_LABELS[status] }),
-)
+// Leads e atendente veem somente as colunas do seu domínio —
+// IN_EVALUATION e NEGOTIATION pertencem às telas de Avaliações e Negociações.
+const LEADS_COLUMNS: TicketStatus[] = [
+  TicketStatus.NEW,
+  TicketStatus.IN_CONTACT,
+  TicketStatus.SCHEDULED,
+  TicketStatus.PENDING,
+  TicketStatus.WIN,
+  TicketStatus.POST_PROCEDURE,
+]
+
+function getVisibleColumns(role: Role | undefined | null): TicketStatus[] {
+  if (
+    role === Role.USER_LEADS ||
+    role === Role.ADM_LEADS ||
+    role === Role.USER_ATTENDANT
+  ) return LEADS_COLUMNS
+  return KANBAN_COLUMN_ORDER
+}
 
 export default function TicketKanbanPage() {
   const { data: tickets = [] } = useTickets()
   const { data: customers = [] } = useCustomers()
   const changeStatus = useChangeTicketStatus()
   const role = useAuthStore((state) => state.user?.role)
+
+  const COLUMNS = getVisibleColumns(role).map(
+    (status) => ({ status, label: TICKET_STATUS_LABELS[status] }),
+  )
 
   const [selectedTicket, setSelectedTicket] = useState<LeadTicket | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
