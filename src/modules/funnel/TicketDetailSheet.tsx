@@ -116,7 +116,7 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
                   </div>
                   <div>
                     <p className="text-muted-foreground">Telefone</p>
-                    <p>{customer.phone}</p>
+                    <p>{customer.phone && customer.phone !== 'NULL' ? customer.phone : '—'}</p>
                   </div>
                 </>
               )}

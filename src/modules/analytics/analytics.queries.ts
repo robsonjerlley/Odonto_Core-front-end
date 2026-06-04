@@ -40,3 +40,10 @@ export function useBonus(userId: string, periodRef: string) {
     enabled: !!userId && !!periodRef,
   })
 }
+
+export function usePostProcedure(period: AnalyticsPeriod) {
+  return useQuery({
+    queryKey: ['analytics-post-procedure', period.from, period.to],
+    queryFn: () => analyticsService.getPostProcedure(period),
+  })
+}

@@ -1,5 +1,6 @@
 import api from '@/lib/api'
 import type { Sector, Role, AdsChannel } from '@/types/enums'
+import type { RecycleConfigResponse, BonusConfigResponse, AdsInvestmentResponse } from '@/types/models'
 
 // Backend RecycleConfigRequestDTO aceita apenas afterDays
 export interface RecycleConfigDTO {
@@ -32,4 +33,15 @@ export const configService = {
 
   registerAdsInvestment: (dto: AdsInvestmentDTO) =>
     api.post('/api/v1/config/ads-investment', dto).then((r) => r.data),
+
+  // GET — leitura das configurações vigentes (§7.7). getRecycleConfig retorna
+  // 404 quando ainda não há config ativa cadastrada.
+  getRecycleConfig: () =>
+    api.get<RecycleConfigResponse>('/api/v1/config/recycle').then((r) => r.data),
+
+  getBonusConfigs: (sector: Sector) =>
+    api.get<BonusConfigResponse[]>('/api/v1/config/bonus', { params: { sector } }).then((r) => r.data),
+
+  getAdsInvestments: (channel: AdsChannel) =>
+    api.get<AdsInvestmentResponse[]>('/api/v1/config/ads-investment', { params: { channel } }).then((r) => r.data),
 }

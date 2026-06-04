@@ -71,3 +71,17 @@ export const PaymentMethod = {
   DENTAL_INSURANCE: 'DENTAL_INSURANCE',
 } as const
 export type PaymentMethod = typeof PaymentMethod[keyof typeof PaymentMethod]
+
+/**
+ * Percentual líquido que a clínica recebe após taxas por forma de pagamento.
+ * Espelha `PaymentMethod.conversionFactor` do backend (ADR-008). Usado para
+ * exibir o valor esperado em caixa (`expectedCash = finalValue × fator`).
+ */
+export const PAYMENT_METHOD_CONVERSION_FACTOR: Record<PaymentMethod, number> = {
+  PIX:              1.00,
+  CASH:             1.00,
+  DEBIT_CARD:       0.98,
+  CREDIT_CARD:      0.97,
+  INSTALLMENT:      0.85,
+  DENTAL_INSURANCE: 0.90,
+}

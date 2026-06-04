@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import api from '@/lib/api'
+import { authService } from './auth.service'
 import { usersService } from '@/modules/identity/users.service'
 import type { User } from '@/types/models'
 import { Role } from '@/types/enums'
@@ -44,10 +44,7 @@ export default function LoginPage() {
 
     async function onSubmit(data: LoginFormData) {
       try {
-        const { data: authData } = await api.post<{ token: string }>(
-          '/api/v1/authentication/login',
-          data,
-        )
+        const authData = await authService.login(data.username, data.password)
 
         login(null, authData.token)
 

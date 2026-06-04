@@ -168,7 +168,16 @@ export interface UserPerformanceResultDTO {
     totalConverted: number
     conversionPct: number
     avgTicketValue: number
+    expectedCash: number      // avgTicketValue líquido (após fator da forma de pagamento)
     calculatedBonus: number
+}
+
+export interface PostProcedureResultDTO {
+    totalPostProcedure: number
+    returnedCount: number
+    lostCount: number
+    returnRate: number
+    pendingCount: number
 }
 
 export interface GlobalDashBoardResultDTO {
@@ -177,5 +186,37 @@ export interface GlobalDashBoardResultDTO {
     stageConversion: StageConversionResultDTO
     sectorDropOff: SectorDropOffResultDTO[]
     topPerformers: UserPerformanceResultDTO[]
+    totalExpectedCash: number   // caixa esperado consolidado do período
+}
+
+// Config — respostas (GET) espelhando os ResponseDTOs do backend
+
+export interface RecycleConfigResponse {
+    id: string
+    afterDays: number
+    active: boolean
+    createdAt: string
+}
+
+export interface BonusConfigResponse {
+    id: string
+    sector: Sector
+    role: Role
+    metricKey: string
+    bonusPct: number
+    targetValue: number | null
+    periodRef: string
+    active: boolean
+    createdAt: string
+}
+
+export interface AdsInvestmentResponse {
+    id: string
+    channel: AdsChannel
+    campaign: string | null
+    amount: number
+    periodStart: string
+    periodEnd: string
+    createdAt: string
 }
 

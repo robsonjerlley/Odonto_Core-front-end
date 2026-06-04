@@ -1,10 +1,11 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Workflow, Users, Handshake,
-  UserCog, Settings, LogOut, type LucideIcon,
+  UserCog, Settings, LogOut, LineChart, type LucideIcon,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
-import { can, type Resource, type Action } from '@/lib/permissions'
+import { can, analyticsScope } from '@/lib/permissions'
+import type { Role } from '@/types/enums'
 import { Button } from '@/components/ui/button'
 import { ROLE_LABELS, NAV_LABELS } from '@/lib/labels'
 
@@ -12,21 +13,24 @@ interface NavItem {
   to: string
   label: string
   icon: LucideIcon
-  resource: Resource
-  action: Action
+  /** Visibilidade do item no menu para o papel logado. */
+  show: (role: Role | undefined | null) => boolean
   end?: boolean
 }
 
 const MAIN_NAV: NavItem[] = [
-  { to: '/',           label: NAV_LABELS.overview,     icon: LayoutDashboard, resource: 'ANALYTICS', action: 'READ', end: true },
-  { to: '/funnel',     label: NAV_LABELS.pipeline,     icon: Workflow,        resource: 'TICKET',    action: 'READ' },
-  { to: '/customers',  label: NAV_LABELS.patients,     icon: Users,           resource: 'CUSTOMER',  action: 'READ' },
-  { to: '/commercial', label: NAV_LABELS.negotiations, icon: Handshake,       resource: 'DEAL',      action: 'READ' },
+  // Overview global: apenas papéis com analytics de escopo GLOBAL (ADM_SYSTEM).
+  { to: '/',               label: NAV_LABELS.overview,     icon: LayoutDashboard, end: true, show: (r) => analyticsScope(r) === 'GLOBAL' },
+  // Desempenho pessoal: papéis com analytics de escopo OWN (ex.: atendente).
+  { to: '/meu-desempenho', label: NAV_LABELS.performance,  icon: LineChart,                  show: (r) => analyticsScope(r) === 'OWN' },
+  { to: '/funnel',         label: NAV_LABELS.pipeline,     icon: Workflow,                   show: (r) => can(r, 'TICKET', 'READ') },
+  { to: '/customers',      label: NAV_LABELS.patients,     icon: Users,                      show: (r) => can(r, 'CUSTOMER', 'READ') },
+  { to: '/commercial',     label: NAV_LABELS.negotiations, icon: Handshake,                  show: (r) => can(r, 'DEAL', 'READ') },
 ]
 
 const ADMIN_NAV: NavItem[] = [
-  { to: '/users',  label: NAV_LABELS.team,     icon: UserCog,  resource: 'USER',   action: 'READ' },
-  { to: '/config', label: NAV_LABELS.settings, icon: Settings, resource: 'CONFIG', action: 'CONFIGURE' },
+  { to: '/users',  label: NAV_LABELS.team,     icon: UserCog,  show: (r) => can(r, 'USER', 'READ') },
+  { to: '/config', label: NAV_LABELS.settings, icon: Settings, show: (r) => can(r, 'CONFIG', 'CONFIGURE') },
 ]
 
 function NavItemLink({ item }: { item: NavItem }) {
@@ -61,8 +65,8 @@ export default function AppLayout() {
   const navigate = useNavigate()
   const role = user?.role
 
-  const mainNav = MAIN_NAV.filter((item) => can(role, item.resource, item.action))
-  const adminNav = ADMIN_NAV.filter((item) => can(role, item.resource, item.action))
+  const mainNav = MAIN_NAV.filter((item) => item.show(role))
+  const adminNav = ADMIN_NAV.filter((item) => item.show(role))
 
   function handleLogout() {
     logout()

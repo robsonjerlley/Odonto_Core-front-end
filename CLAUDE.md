@@ -65,6 +65,13 @@ enum CustomerSource { ADS_PAID, ORGANIC, INDICATION }
 
 ## API — Endpoints completos
 
+> **⚠ FONTE DA VERDADE:** o contrato oficial de integração está em
+> `B:\projects\odontocore.crm\odontocore.crm\.claude\specs\frontend-integration-contract.md`
+> (v1.0, 2026-06-03). Ele descreve endpoints, DTOs, enums, modelo de erro, RBAC,
+> máquina de estados, paginação `Page<T>`, refresh token e traz um apêndice
+> TypeScript pronto. O bloco abaixo é histórico e pode estar defasado — em caso
+> de divergência, **o contrato vence**. O frontend foi alinhado a ele em 2026-06-04.
+
 **Base URL:** `http://localhost:8080` (dev local)
 
 ### Auth
@@ -309,18 +316,18 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → P
 - [x] Card de ticket com detalhes e ações
 - [x] Timeline de logs de contato dentro do ticket
 - [x] Formulário de novo log com `ContactChannel` + data/hora
-- [ ] Tipo `LeadTicket` incompleto — faltam `procedurePerformedAt`, `returnScheduledAt` em `src/types/models.ts`
-- [ ] Tipo `ContactLog` incompleto — faltam `statusBefore`, `statusAfter` em `src/types/models.ts`
-- [ ] Enum `POST_PROCEDURE` ausente em `src/types/enums.ts`
+- [x] Tipo `LeadTicket` completo — `procedurePerformedAt`, `returnScheduledAt` em `src/types/models.ts`
+- [x] Tipo `ContactLog` completo — `statusBefore`, `statusAfter` em `src/types/models.ts`
+- [x] Enum `POST_PROCEDURE` presente em `src/types/enums.ts`
 
-### Fase 5 — Commercial ⚠️ PARCIAL (estrutura criada, bugs impedem uso)
+### Fase 5 — Commercial ✅
 - [x] Arquivos criados: `commercial.service.ts`, `commercial.queries.ts`, `deal.schema.ts`, `DealsPage.tsx`, `DealSheet.tsx`, `ProcedureListEditor.tsx`
-- [ ] Verificar mapeamento real das rotas de deal no backend (ver Divergências D1)
-- [ ] Tipos monetários incorretos — `tableValue`, `totalValue`, `discountPct`, `finalValue` como `number`; backend serializa `BigDecimal` como string (ver Divergências D5)
-- [ ] Fluxo de desconto — UI pendente
-- [ ] Fechamento de deal com seleção de forma de pagamento — UI pendente
-- [ ] Histórico de versões do deal — UI pendente
-- [ ] Config (ADM_SYSTEM): leitura GET de RecycleConfig, BonusConfig, AdsInvestment não implementada
+- [x] Rotas de deal alinhadas ao contrato (`/api/v1/deals`, `findByTicket` via `ticketId/{}` com 204, fechamento via `/{id}/status`)
+- [x] Tipos monetários `number` confirmados (Jackson serializa `BigDecimal` como número JSON — ver Divergências D5)
+- [x] Fluxo de desconto — `ApplyDiscountDialog` em `DealSheet.tsx`
+- [x] Fechamento de deal com seleção de forma de pagamento — `CloseDealDialog`
+- [x] Histórico de versões do deal — `HistoryTimeline` (GET `/deals/{id}/dealHistory`)
+- [x] Config (ADM_SYSTEM): GET implementado no `config.service.ts`; `RecycleConfig` lido/prefill na `ConfigPage`; `getBonusConfigs`/`getAdsInvestments` disponíveis no service
 
 ### Fase 6 — Analytics ✅ (implementado fora do plano original)
 - [x] Dashboard global com filtro de período (`from`/`to`)
@@ -329,8 +336,11 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → P
 - [x] Drop-off por setor
 - [x] Ranking de performance
 - [x] Tela de performance individual
-- [ ] Bug: `/analytics/bonus/{id}` — frontend espera `number`, confirmar se backend retorna BigDecimal puro ou objeto (ver Divergências D6)
-- [ ] Cálculo de bônus por período (`periodRef: YYYY-MM`) — verificar após D6
+- [x] `/analytics/bonus/{id}` — lê `BonusResultDTO { value }` (ver Divergências D6)
+- [x] Cálculo de bônus por período (`periodRef: YYYY-MM`)
+- [x] KPIs no Overview (`totalExpectedCash`, fechamentos, captados, canais) + coluna `expectedCash` na performance
+- [x] Card de acompanhamento pós-procedimento (GET `/analytics/post-procedure`)
+- [x] View de desempenho pessoal `/meu-desempenho` (`MyPerformancePage`) — escopo OWN para `USER_ATTENDANT`; usa `user-performance/{id}` + `bonus/{id}`. Analytics agora é scope-aware: `ANALYTICS_SCOPE` (GLOBAL=ADM_SYSTEM → `/`; OWN=atendente → `/meu-desempenho`), guarda de rota unificada `RequireRoute` + `canAccessRoute`.
 
 ---
 
@@ -378,13 +388,16 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → P
 ## Decisões de arquitetura
 
 - **SPA com Vite**, não Next.js — não introduzir SSR/RSC.
-- **Auth via JWT** no header `Authorization: Bearer <token>`. Token salvo em `localStorage` no MVP (reavaliado para produção).
+- **Auth via JWT** no header `Authorization: Bearer <token>`. Token salvo em `localStorage` no MVP (reavaliado para produção). Em 401 (fora de `/authentication/*`), o interceptor tenta `POST /authentication/refresh` com o token atual uma única vez e refaz a requisição; se o refresh falhar, encerra a sessão (`auth.service.ts` + `lib/api/index.ts`). Refreshs concorrentes compartilham uma única promise.
 - **TanStack Query** para todo estado de servidor. Zustand apenas para estado de cliente (auth, UI global).
 - **shadcn/ui** como base de componentes — acessibilidade via Radix primitives.
 - **Kanban drag-and-drop:** `@dnd-kit/core` (mais acessível que `react-beautiful-dnd`).
 - **Gráficos:** Recharts (mais React-friendly, sem dependências extras).
 - **Validação de formulários** com Zod — schemas espelham os DTOs do backend.
 - **Sem mocks de dados** — o backend roda localmente desde o início.
+- **Timezone** — backend fixado em America/Sao_Paulo (ADR-009 no backend). `LocalDateTime` é horário de Brasília; exibir naïve, **sem** conversão UTC. O envio usa `nowBrasiliaISO` (`lib/utils.ts`) — ida e volta simétricas.
+- **Guardas de rota** — `RequireRoute path=...` + `canAccessRoute` em `lib/permissions.ts`. Rotas por capacidade (`can`) e analytics por escopo (`analyticsScope`: GLOBAL=Overview `/`, OWN=`/meu-desempenho`).
+- **Toast** — store + função `toast()` em `lib/toast.ts`; `components/Toaster.tsx` só exporta o componente (Fast Refresh). Variantes cva do shadcn extraídas para `*-variants.ts` (`button-variants.ts`, `badge-variants.ts`).
 
 ---
 

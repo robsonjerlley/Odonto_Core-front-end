@@ -46,7 +46,7 @@ interface EditProceduresDialogProps {
 function EditProceduresDialog({ deal, ticketId, open, onOpenChange }: EditProceduresDialogProps) {
   const update = useUpdateDeal(deal.id, ticketId)
 
-  const form = useForm<DealFormInput, any, DealFormData>({
+  const form = useForm<DealFormInput, unknown, DealFormData>({
     resolver: zodResolver(dealFormSchema),
     defaultValues: { procedures: deal.procedures },
   })
@@ -55,7 +55,9 @@ function EditProceduresDialog({ deal, ticketId, open, onOpenChange }: EditProced
     try {
       await update.mutateAsync(data)
       onOpenChange(false)
-    } catch {}
+    } catch {
+      /* erro já exibido via toast pelo interceptor; mantém o diálogo aberto */
+    }
   }
 
   return (
@@ -97,7 +99,7 @@ interface ApplyDiscountDialogProps {
 function ApplyDiscountDialog({ deal, ticketId, open, onOpenChange }: ApplyDiscountDialogProps) {
   const apply = useApplyDiscount(deal.id, ticketId)
 
-  const form = useForm<DiscountFormInput, any, DiscountFormData>({
+  const form = useForm<DiscountFormInput, unknown, DiscountFormData>({
     resolver: zodResolver(discountSchema),
     defaultValues: { discountPct: deal.discountPct ?? undefined },
   })
@@ -106,7 +108,9 @@ function ApplyDiscountDialog({ deal, ticketId, open, onOpenChange }: ApplyDiscou
     try {
       await apply.mutateAsync(data)
       onOpenChange(false)
-    } catch {}
+    } catch {
+      /* erro já exibido via toast pelo interceptor; mantém o diálogo aberto */
+    }
   }
 
   return (
@@ -171,7 +175,9 @@ function CloseDealDialog({ deal, ticketId, open, onOpenChange }: CloseDealDialog
     try {
       await close.mutateAsync(data)
       onOpenChange(false)
-    } catch {}
+    } catch {
+      /* erro já exibido via toast pelo interceptor; mantém o diálogo aberto */
+    }
   }
 
   const finalValue = deal.finalValue ?? deal.totalValue
@@ -300,7 +306,7 @@ export default function DealSheet({ ticket, customer, open, onOpenChange }: Deal
 
   const createDeal = useCreateDeal(ticket?.id ?? '')
 
-  const createForm = useForm<DealFormInput, any, DealFormData>({
+  const createForm = useForm<DealFormInput, unknown, DealFormData>({
     resolver: zodResolver(dealFormSchema),
     defaultValues: { procedures: [{ name: '', code: '', tableValue: 0, quantity: 1, note: '' }] },
   })
@@ -309,7 +315,9 @@ export default function DealSheet({ ticket, customer, open, onOpenChange }: Deal
     try {
       await createDeal.mutateAsync(data)
       createForm.reset()
-    } catch {}
+    } catch {
+      /* erro já exibido via toast pelo interceptor; mantém o formulário preenchido */
+    }
   }
 
   if (!ticket) return null

@@ -5,6 +5,7 @@ import type {
   StageConversionResultDTO,
   SectorDropOffResultDTO,
   UserPerformanceResultDTO,
+  PostProcedureResultDTO,
   BonusResultDTO,
 } from '@/types/models'
 import type { AdsChannel, Sector } from '@/types/enums'
@@ -50,4 +51,9 @@ export const analyticsService = {
     api
       .get<BonusResultDTO>(`/api/v1/analytics/bonus/${userId}`, { params: { periodRef } })
       .then((r) => r.data.value),
+
+  getPostProcedure: (period: AnalyticsPeriod) =>
+    api
+      .get<PostProcedureResultDTO>('/api/v1/analytics/post-procedure', { params: period })
+      .then((r) => r.data),
 }

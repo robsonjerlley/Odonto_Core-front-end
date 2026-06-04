@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import axios from 'axios'
 import { z } from 'zod'
 import { Sector, Role, AdsChannel } from '@/types/enums'
 import { SECTOR_LABELS, ROLE_LABELS, ADS_CHANNEL_LABELS } from '@/lib/labels'
@@ -21,15 +23,37 @@ type RecycleForm = z.output<typeof recycleSchema>
 
 function RecycleConfigCard() {
   const [success, setSuccess] = useState(false)
-  const form = useForm<RecycleFormInput, any, RecycleForm>({
+  const qc = useQueryClient()
+
+  // Config vigente — 404 significa "nenhuma config ativa ainda" (não é erro).
+  const { data: current } = useQuery({
+    queryKey: ['config-recycle'],
+    queryFn: async () => {
+      try {
+        return await configService.getRecycleConfig()
+      } catch (err) {
+        if (axios.isAxiosError(err) && err.response?.status === 404) return null
+        throw err
+      }
+    },
+    retry: false,
+  })
+
+  const form = useForm<RecycleFormInput, unknown, RecycleForm>({
     resolver: zodResolver(recycleSchema),
     defaultValues: { afterDays: 7 },
   })
+
+  // Pré-preenche com o valor vigente assim que a config é carregada.
+  useEffect(() => {
+    if (current) form.reset({ afterDays: current.afterDays })
+  }, [current, form])
 
   async function onSubmit(data: RecycleForm) {
     try {
       const dto: RecycleConfigDTO = { afterDays: data.afterDays }
       await configService.setRecycleConfig(dto)
+      await qc.invalidateQueries({ queryKey: ['config-recycle'] })
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch {
@@ -46,6 +70,15 @@ function RecycleConfigCard() {
         <p className="text-sm text-muted-foreground mb-4">
           Tickets em <strong>Pendente</strong> que ultrapassarem o prazo serão reciclados automaticamente.
         </p>
+        {current ? (
+          <p className="text-sm mb-4 rounded-md bg-muted/40 px-3 py-2">
+            Prazo vigente: <strong>{current.afterDays} dia(s)</strong>
+          </p>
+        ) : (
+          <p className="text-sm mb-4 rounded-md bg-amber-50 text-amber-800 px-3 py-2">
+            Nenhuma configuração de reciclagem ativa. Defina um prazo abaixo.
+          </p>
+        )}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField control={form.control} name="afterDays" render={({ field }) => (
@@ -95,7 +128,7 @@ const METRIC_OPTIONS = [
 
 function BonusConfigCard() {
   const [success, setSuccess] = useState(false)
-  const form = useForm<BonusFormInput, any, BonusForm>({
+  const form = useForm<BonusFormInput, unknown, BonusForm>({
     resolver: zodResolver(bonusSchema),
     defaultValues: {
       metricKey: '',
@@ -247,7 +280,7 @@ type AdsForm = z.output<typeof adsSchema>
 
 function AdsInvestmentCard() {
   const [success, setSuccess] = useState(false)
-  const form = useForm<AdsFormInput, any, AdsForm>({
+  const form = useForm<AdsFormInput, unknown, AdsForm>({
     resolver: zodResolver(adsSchema),
     defaultValues: { campaign: '', amount: undefined },
   })

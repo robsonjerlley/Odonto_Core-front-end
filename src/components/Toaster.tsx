@@ -1,36 +1,4 @@
-import { create } from 'zustand'
-
-type ToastVariant = 'error' | 'success' | 'info'
-
-type Toast = {
-  id: number
-  message: string
-  variant: ToastVariant
-}
-
-type ToastStore = {
-  toasts: Toast[]
-  push: (message: string, variant?: ToastVariant) => void
-  dismiss: (id: number) => void
-}
-
-let nextId = 1
-
-export const useToastStore = create<ToastStore>((set) => ({
-  toasts: [],
-  push: (message, variant = 'info') => {
-    const id = nextId++
-    set((s) => ({ toasts: [...s.toasts, { id, message, variant }] }))
-    setTimeout(() => {
-      set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }))
-    }, 5000)
-  },
-  dismiss: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
-}))
-
-export function toast(message: string, variant: ToastVariant = 'info') {
-  useToastStore.getState().push(message, variant)
-}
+import { useToastStore, type ToastVariant } from '@/lib/toast'
 
 const variantClasses: Record<ToastVariant, string> = {
   error: 'bg-red-600 text-white border-red-700',

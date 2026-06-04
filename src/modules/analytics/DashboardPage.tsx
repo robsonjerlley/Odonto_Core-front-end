@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from 'recharts'
-import { useDashboard, useConversion, useUserPerformance, useBonus } from './analytics.queries'
+import { useDashboard, useConversion, useUserPerformance, useBonus, usePostProcedure } from './analytics.queries'
 import { SECTOR_LABELS, ADS_CHANNEL_LABELS } from '@/lib/labels'
 import { Sector } from '@/types/enums'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -235,6 +235,7 @@ function UserPerformanceDetail({ performer, period, onClose }: UserPerformanceDe
             { label: 'Convertidos', value: data.totalConverted },
             { label: 'Conversão', value: pct(data.conversionPct) },
             { label: 'Ticket médio', value: currency(data.avgTicketValue) },
+            { label: 'Caixa esperado', value: currency(data.expectedCash) },
           ].map((item) => (
             <div key={item.label} className="rounded-lg bg-muted/40 p-3">
               <p className="text-lg font-bold">{item.value}</p>
@@ -296,6 +297,7 @@ function TopPerformersTable({
               <th className="text-right p-3 font-medium">Convertidos</th>
               <th className="text-right p-3 font-medium">Conversão</th>
               <th className="text-right p-3 font-medium">Ticket médio</th>
+              <th className="text-right p-3 font-medium">Caixa esperado</th>
               <th className="p-3"><span className="sr-only">Ações</span></th>
             </tr>
           </thead>
@@ -310,6 +312,7 @@ function TopPerformersTable({
                 <td className="p-3 text-right">{p.totalConverted}</td>
                 <td className="p-3 text-right font-medium">{pct(p.conversionPct)}</td>
                 <td className="p-3 text-right">{currency(p.avgTicketValue)}</td>
+                <td className="p-3 text-right">{currency(p.expectedCash)}</td>
                 <td className="p-3 text-right">
                   <Button variant="ghost" size="sm" onClick={() => setSelected(p)}>
                     Ver detalhes
@@ -329,6 +332,53 @@ function TopPerformersTable({
         />
       )}
     </>
+  )
+}
+
+// ─── KPI card ─────────────────────────────────────────────────────────────────
+
+function KpiCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-2xl font-semibold tracking-tight mt-1">{value}</p>
+        {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
+      </CardContent>
+    </Card>
+  )
+}
+
+// ─── Post-procedure card ──────────────────────────────────────────────────────
+
+function PostProcedureCard({ period }: { period: AnalyticsPeriod }) {
+  const { data, isLoading } = usePostProcedure(period)
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Acompanhamento pós-procedimento</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+        {data && (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[
+              { label: 'Total', value: String(data.totalPostProcedure) },
+              { label: 'Retornaram', value: String(data.returnedCount) },
+              { label: 'Em aberto', value: String(data.pendingCount) },
+              { label: 'Perdidos', value: String(data.lostCount) },
+              { label: 'Taxa de retorno', value: pct(data.returnRate) },
+            ].map((item) => (
+              <div key={item.label} className="rounded-lg bg-muted/40 p-3 text-center">
+                <p className="text-xl font-bold">{item.value}</p>
+                <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -355,6 +405,30 @@ export default function DashboardPage() {
 
       {dashboard && (
         <>
+          {/* KPIs do período */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard
+              label="Caixa esperado"
+              value={currency(dashboard.totalExpectedCash)}
+              hint="Receita líquida estimada (após taxas)"
+            />
+            <KpiCard
+              label="Fechamentos"
+              value={String(dashboard.stageConversion?.closedCount ?? 0)}
+              hint="Negócios ganhos no período"
+            />
+            <KpiCard
+              label="Captados"
+              value={String(dashboard.stageConversion?.captureCount ?? 0)}
+              hint="Leads que entraram no funil"
+            />
+            <KpiCard
+              label="Canais de Ads"
+              value={String(dashboard.adsRoi?.length ?? 0)}
+              hint="Canais com investimento no período"
+            />
+          </div>
+
           {/* ROI e Drop-off lado a lado */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
@@ -378,6 +452,9 @@ export default function DashboardPage() {
 
           {/* Conversão */}
           <ConversionCard period={period} />
+
+          {/* Pós-procedimento */}
+          <PostProcedureCard period={period} />
 
           {/* Top performers */}
           <Card>

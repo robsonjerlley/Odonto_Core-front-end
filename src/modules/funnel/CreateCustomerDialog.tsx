@@ -1,4 +1,4 @@
-import { useForm, type DefaultValues } from 'react-hook-form'
+import { useForm, useWatch, type DefaultValues } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CustomerSource, AdsChannel, ContactChannel } from '@/types/enums'
 import { useCreateCustomer } from './funnel.queries'
@@ -37,7 +37,8 @@ export default function CreateCustomerDialog({ open, onOpenChange }: CreateCusto
     defaultValues: DEFAULT_VALUES,
   })
 
-  const source = form.watch('source')
+  const source = useWatch({ control: form.control, name: 'source' })
+  const initialNote = useWatch({ control: form.control, name: 'initialNote' })
 
   function handleOpenChange(value: boolean) {
     if (!value) form.reset(DEFAULT_VALUES)
@@ -122,7 +123,7 @@ export default function CreateCustomerDialog({ open, onOpenChange }: CreateCusto
                 </FormItem>
               )} />
 
-              {form.watch('initialNote') ? (
+              {initialNote ? (
                 <FormField control={form.control} name="channel" render={({ field }) => (
                   <FormItem className="col-span-2">
                     <FormLabel>Canal do contato</FormLabel>

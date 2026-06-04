@@ -1,13 +1,14 @@
 import { createBrowserRouter } from 'react-router-dom'
 import LoginPage from '@/modules/auth/LoginPage'
 import ProtectedRoute from '@/modules/auth/ProtectedRoute'
-import RequirePermission from '@/modules/auth/RequirePermission'
+import RequireRoute from '@/modules/auth/RequireRoute'
 import AppLayout from '@/components/AppLayout'
 import UserListPage from '@/modules/identity/UserListPage'
 import CustomerListPage from '@/modules/funnel/CustomerListPage'
 import TicketKanbanPage from '@/modules/funnel/TicketKanbanPage'
 import DealsPage from '@/modules/commercial/DealsPage'
 import DashboardPage from '@/modules/analytics/DashboardPage'
+import MyPerformancePage from '@/modules/analytics/MyPerformancePage'
 import ConfigPage from '@/modules/config/ConfigPage'
 
 export const router = createBrowserRouter([
@@ -23,27 +24,31 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           {
-            element: <RequirePermission resource="ANALYTICS" action="READ" />,
+            element: <RequireRoute path="/" />,
             children: [{ index: true, element: <DashboardPage /> }],
           },
           {
-            element: <RequirePermission resource="TICKET" action="READ" />,
+            element: <RequireRoute path="/meu-desempenho" />,
+            children: [{ path: 'meu-desempenho', element: <MyPerformancePage /> }],
+          },
+          {
+            element: <RequireRoute path="/funnel" />,
             children: [{ path: 'funnel', element: <TicketKanbanPage /> }],
           },
           {
-            element: <RequirePermission resource="CUSTOMER" action="READ" />,
+            element: <RequireRoute path="/customers" />,
             children: [{ path: 'customers', element: <CustomerListPage /> }],
           },
           {
-            element: <RequirePermission resource="DEAL" action="READ" />,
+            element: <RequireRoute path="/commercial" />,
             children: [{ path: 'commercial', element: <DealsPage /> }],
           },
           {
-            element: <RequirePermission resource="USER" action="READ" />,
+            element: <RequireRoute path="/users" />,
             children: [{ path: 'users', element: <UserListPage /> }],
           },
           {
-            element: <RequirePermission resource="CONFIG" action="CONFIGURE" />,
+            element: <RequireRoute path="/config" />,
             children: [{ path: 'config', element: <ConfigPage /> }],
           },
         ],

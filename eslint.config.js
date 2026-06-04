@@ -18,5 +18,10 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // Permite exportar constantes (ex.: variantes cva do shadcn/ui) junto ao
+      // componente sem quebrar o Fast Refresh — config padrão do template Vite+React.
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+    },
   },
 ])

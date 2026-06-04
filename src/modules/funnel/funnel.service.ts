@@ -19,7 +19,7 @@ export interface CustomerCreateDTO {
 export interface CustomerUpdateDTO {
   id: string
   name: string
-  cpf: string
+  cpf?: string        // opcional (US-FUND-01) — só obrigatório na formalização do agendamento
   phone: string
   phone2?: string
   email?: string
