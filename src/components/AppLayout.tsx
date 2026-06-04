@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Workflow, Users, Handshake,
-  UserCog, Settings, LogOut, LineChart, Moon, Sun, type LucideIcon,
+  UserCog, Settings, LogOut, LineChart, Moon, Sun, Stethoscope, type LucideIcon,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { can, analyticsScope } from '@/lib/permissions'
@@ -26,6 +26,7 @@ const MAIN_NAV: NavItem[] = [
   { to: '/meu-desempenho', label: NAV_LABELS.performance,  icon: LineChart,                  show: (r) => analyticsScope(r) === 'OWN' },
   { to: '/funnel',         label: NAV_LABELS.pipeline,     icon: Workflow,                   show: (r) => can(r, 'TICKET', 'READ') },
   { to: '/customers',      label: NAV_LABELS.patients,     icon: Users,                      show: (r) => can(r, 'CUSTOMER', 'READ') },
+  { to: '/avaliacoes',     label: NAV_LABELS.evaluations,  icon: Stethoscope,                show: (r) => can(r, 'DEAL', 'CREATE') },
   { to: '/commercial',     label: NAV_LABELS.negotiations, icon: Handshake,                  show: (r) => can(r, 'DEAL', 'READ') },
 ]
 

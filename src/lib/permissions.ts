@@ -122,11 +122,12 @@ export function analyticsScope(role: Role | undefined | null): AnalyticsScope | 
  * resolvidas à parte em `canAccessRoute`.
  */
 export const ROUTE_PERMISSION = {
-  '/funnel':     { resource: 'TICKET',    action: 'READ' },
-  '/customers':  { resource: 'CUSTOMER',  action: 'READ' },
-  '/commercial': { resource: 'DEAL',      action: 'READ' },
-  '/users':      { resource: 'USER',      action: 'READ' },
-  '/config':     { resource: 'CONFIG',    action: 'CONFIGURE' },
+  '/funnel':      { resource: 'TICKET',    action: 'READ' },
+  '/customers':   { resource: 'CUSTOMER',  action: 'READ' },
+  '/avaliacoes':  { resource: 'DEAL',      action: 'CREATE' },
+  '/commercial':  { resource: 'DEAL',      action: 'READ' },
+  '/users':       { resource: 'USER',      action: 'READ' },
+  '/config':      { resource: 'CONFIG',    action: 'CONFIGURE' },
 } as const satisfies Record<string, { resource: Resource; action: Action }>
 
 export type AppRoute = '/' | '/meu-desempenho' | keyof typeof ROUTE_PERMISSION
@@ -141,7 +142,7 @@ export function canAccessRoute(role: Role | undefined | null, route: AppRoute): 
 
 /** Ordem de preferência ao escolher a primeira rota acessível de um papel. */
 const ROUTE_ORDER: AppRoute[] = [
-  '/', '/funnel', '/customers', '/commercial', '/meu-desempenho', '/users', '/config',
+  '/', '/funnel', '/customers', '/avaliacoes', '/commercial', '/meu-desempenho', '/users', '/config',
 ]
 
 /** Primeira rota que o papel consegue acessar — fallback de redirecionamento. */

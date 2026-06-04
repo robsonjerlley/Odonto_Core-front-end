@@ -6,6 +6,7 @@ import AppLayout from '@/components/AppLayout'
 import UserListPage from '@/modules/identity/UserListPage'
 import CustomerListPage from '@/modules/funnel/CustomerListPage'
 import TicketKanbanPage from '@/modules/funnel/TicketKanbanPage'
+import EvaluationsPage from '@/modules/evaluations/EvaluationsPage'
 import DealsPage from '@/modules/commercial/DealsPage'
 import DashboardPage from '@/modules/analytics/DashboardPage'
 import MyPerformancePage from '@/modules/analytics/MyPerformancePage'
@@ -38,6 +39,10 @@ export const router = createBrowserRouter([
           {
             element: <RequireRoute path="/customers" />,
             children: [{ path: 'customers', element: <CustomerListPage /> }],
+          },
+          {
+            element: <RequireRoute path="/avaliacoes" />,
+            children: [{ path: 'avaliacoes', element: <EvaluationsPage /> }],
           },
           {
             element: <RequireRoute path="/commercial" />,

@@ -138,6 +138,7 @@ export const NAV_LABELS = {
   overview:      'Overview',
   pipeline:      'Pipeline',
   patients:      'Pacientes',
+  evaluations:   'Avaliações',
   negotiations:  'Negociações',
   performance:   'Performance',
   insights:      'Insights',
