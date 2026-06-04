@@ -3,6 +3,7 @@ import LoginPage from '@/modules/auth/LoginPage'
 import ProtectedRoute from '@/modules/auth/ProtectedRoute'
 import RequireRoute from '@/modules/auth/RequireRoute'
 import AppLayout from '@/components/AppLayout'
+import HomePage from '@/modules/home/HomePage'
 import UserListPage from '@/modules/identity/UserListPage'
 import CustomerListPage from '@/modules/funnel/CustomerListPage'
 import TicketKanbanPage from '@/modules/funnel/TicketKanbanPage'
@@ -26,7 +27,11 @@ export const router = createBrowserRouter([
         children: [
           {
             element: <RequireRoute path="/" />,
-            children: [{ index: true, element: <DashboardPage /> }],
+            children: [{ index: true, element: <HomePage /> }],
+          },
+          {
+            element: <RequireRoute path="/analytics" />,
+            children: [{ path: 'analytics', element: <DashboardPage /> }],
           },
           {
             element: <RequireRoute path="/meu-desempenho" />,

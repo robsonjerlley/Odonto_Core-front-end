@@ -135,13 +135,13 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const NAV_LABELS = {
-  overview:      'Overview',
+  home:          'Início',
+  analytics:     'Analytics',
   pipeline:      'Pipeline',
   patients:      'Pacientes',
   evaluations:   'Avaliações',
   negotiations:  'Negociações',
   performance:   'Performance',
-  insights:      'Insights',
   settings:      'Configurações',
   team:          'Equipe',
   logout:        'Sair',

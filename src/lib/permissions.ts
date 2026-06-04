@@ -124,6 +124,7 @@ export function analyticsScope(role: Role | undefined | null): AnalyticsScope | 
  * resolvidas à parte em `canAccessRoute`.
  */
 export const ROUTE_PERMISSION = {
+  '/analytics':   { resource: 'ANALYTICS', action: 'READ' },
   '/funnel':      { resource: 'TICKET',    action: 'READ' },
   '/customers':   { resource: 'CUSTOMER',  action: 'READ' },
   '/avaliacoes':  { resource: 'DEAL',      action: 'CREATE' },
@@ -136,16 +137,14 @@ export type AppRoute = '/' | '/meu-desempenho' | keyof typeof ROUTE_PERMISSION
 
 /** Pode o papel acessar a rota? Cobre as rotas de capacidade e as de analytics. */
 export function canAccessRoute(role: Role | undefined | null, route: AppRoute): boolean {
-  if (route === '/') return analyticsScope(role) === 'GLOBAL'          // dashboard global
+  if (route === '/') return !!role                                      // home: qualquer autenticado
   if (route === '/meu-desempenho') return analyticsScope(role) != null // métricas próprias
   const { resource, action } = ROUTE_PERMISSION[route]
   return can(role, resource, action)
 }
 
 /** Ordem de preferência ao escolher a primeira rota acessível de um papel. */
-const ROUTE_ORDER: AppRoute[] = [
-  '/', '/avaliacoes', '/funnel', '/customers', '/commercial', '/meu-desempenho', '/users', '/config',
-]
+const ROUTE_ORDER: AppRoute[] = ['/']
 
 /** Primeira rota que o papel consegue acessar — fallback de redirecionamento. */
 export function firstAccessibleRoute(role: Role | undefined | null): string {

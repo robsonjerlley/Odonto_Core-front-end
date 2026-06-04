@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, Workflow, Users, Handshake,
+  Home, LayoutDashboard, Workflow, Users, Handshake,
   UserCog, Settings, LogOut, LineChart, Moon, Sun, Stethoscope, type LucideIcon,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
@@ -20,9 +20,8 @@ interface NavItem {
 }
 
 const MAIN_NAV: NavItem[] = [
-  // Overview global: apenas papéis com analytics de escopo GLOBAL (ADM_SYSTEM).
-  { to: '/',               label: NAV_LABELS.overview,     icon: LayoutDashboard, end: true, show: (r) => analyticsScope(r) === 'GLOBAL' },
-  // Desempenho pessoal: papéis com analytics de escopo OWN (ex.: atendente).
+  { to: '/',               label: NAV_LABELS.home,         icon: Home,           end: true, show: () => true },
+  { to: '/analytics',      label: NAV_LABELS.analytics,    icon: LayoutDashboard,            show: (r) => analyticsScope(r) === 'GLOBAL' },
   { to: '/meu-desempenho', label: NAV_LABELS.performance,  icon: LineChart,                  show: (r) => analyticsScope(r) === 'OWN' },
   { to: '/funnel',         label: NAV_LABELS.pipeline,     icon: Workflow,                   show: (r) => can(r, 'TICKET', 'READ') },
   { to: '/customers',      label: NAV_LABELS.patients,     icon: Users,                      show: (r) => can(r, 'CUSTOMER', 'READ') },
