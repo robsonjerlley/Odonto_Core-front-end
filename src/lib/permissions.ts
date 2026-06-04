@@ -63,12 +63,14 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   ],
 
   [Role.ADM_EVALUATOR]: [
+    'CUSTOMER:READ',
     'DEAL:CREATE', 'DEAL:READ', 'DEAL:UPDATE',
     'TICKET:READ', 'TICKET:UPDATE',
     'CONTACT_LOG:READ',
   ],
 
   [Role.USER_EVALUATOR]: [
+    'CUSTOMER:READ',
     'DEAL:CREATE', 'DEAL:READ', 'DEAL:UPDATE',
     'TICKET:READ', 'TICKET:UPDATE',
     'CONTACT_LOG:READ',
@@ -142,7 +144,7 @@ export function canAccessRoute(role: Role | undefined | null, route: AppRoute): 
 
 /** Ordem de preferência ao escolher a primeira rota acessível de um papel. */
 const ROUTE_ORDER: AppRoute[] = [
-  '/', '/funnel', '/customers', '/avaliacoes', '/commercial', '/meu-desempenho', '/users', '/config',
+  '/', '/avaliacoes', '/funnel', '/customers', '/commercial', '/meu-desempenho', '/users', '/config',
 ]
 
 /** Primeira rota que o papel consegue acessar — fallback de redirecionamento. */

@@ -7,10 +7,11 @@ export const CUSTOMERS_KEY = ['customers'] as const
 export const TICKETS_KEY = ['tickets'] as const
 const contactLogsKey = (ticketId: string) => ['contact-logs', ticketId] as const
 
-export function useCustomers() {
+export function useCustomers(enabled = true) {
   return useQuery<Customer[]>({
     queryKey: CUSTOMERS_KEY,
     queryFn: funnelService.findAllCustomers,
+    enabled,
   })
 }
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import { useTickets, useCustomers, useChangeTicketStatus } from './funnel.queries'
+import { usePermission } from '@/hooks/usePermission'
 import KanbanColumn from './KanbanColumn'
 import TicketDetailSheet from './TicketDetailSheet'
 import { useAuthStore } from '@/store/auth.store'
@@ -32,8 +33,9 @@ function getVisibleColumns(role: Role | undefined | null): TicketStatus[] {
 }
 
 export default function TicketKanbanPage() {
+  const canReadCustomers = usePermission('CUSTOMER', 'READ')
   const { data: tickets = [] } = useTickets()
-  const { data: customers = [] } = useCustomers()
+  const { data: customers = [] } = useCustomers(canReadCustomers)
   const changeStatus = useChangeTicketStatus()
   const role = useAuthStore((state) => state.user?.role)
 

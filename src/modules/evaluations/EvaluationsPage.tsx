@@ -9,10 +9,12 @@ import { Button } from '@/components/ui/button'
 import { TicketStatus } from '@/types/enums'
 import type { LeadTicket } from '@/types/models'
 import { TICKET_STATUS_COLOR, TICKET_STATUS_LABELS } from '@/lib/labels'
+import { usePermission } from '@/hooks/usePermission'
 
 export default function EvaluationsPage() {
+  const canReadCustomers = usePermission('CUSTOMER', 'READ')
   const { data: tickets = [], isLoading } = useTickets()
-  const { data: customers = [] } = useCustomers()
+  const { data: customers = [] } = useCustomers(canReadCustomers)
   const [selectedTicket, setSelectedTicket] = useState<LeadTicket | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
 
