@@ -1,13 +1,14 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Workflow, Users, Handshake,
-  UserCog, Settings, LogOut, LineChart, type LucideIcon,
+  UserCog, Settings, LogOut, LineChart, Moon, Sun, type LucideIcon,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { can, analyticsScope } from '@/lib/permissions'
 import type { Role } from '@/types/enums'
 import { Button } from '@/components/ui/button'
 import { ROLE_LABELS, NAV_LABELS } from '@/lib/labels'
+import { useDarkMode } from '@/hooks/useDarkMode'
 
 interface NavItem {
   to: string
@@ -64,6 +65,7 @@ export default function AppLayout() {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const role = user?.role
+  const { dark, toggle: toggleDark } = useDarkMode()
 
   const mainNav = MAIN_NAV.filter((item) => item.show(role))
   const adminNav = ADMIN_NAV.filter((item) => item.show(role))
@@ -119,10 +121,15 @@ export default function AppLayout() {
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="mt-3 w-full" onClick={handleLogout}>
-            <LogOut className="size-3.5" />
-            {NAV_LABELS.logout}
-          </Button>
+          <div className="mt-3 flex gap-2">
+            <Button variant="outline" size="sm" className="flex-1" onClick={handleLogout}>
+              <LogOut className="size-3.5" />
+              {NAV_LABELS.logout}
+            </Button>
+            <Button variant="outline" size="icon" className="size-8 shrink-0" onClick={toggleDark} aria-label="Alternar tema">
+              {dark ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
+            </Button>
+          </div>
         </div>
       </aside>
 
