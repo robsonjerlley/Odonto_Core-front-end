@@ -15,27 +15,29 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { CUSTOMER_SOURCE_LABELS } from '@/lib/labels'
-import { useHasRole } from '@/hooks/useHasRole'
-import { Role } from '@/types/enums'
+import { usePermission } from '@/hooks/usePermission'
 
 export default function CustomerListPage() {
   const { data: customers = [], isLoading } = useCustomers()
   const removeCustomer = useRemoveCustomer()
-  const canCreate = useHasRole(Role.ADM_SYSTEM, Role.ADM_LEADS, Role.USER_LEADS, Role.USER_ATTENDANT)
+  const canCreate = usePermission('CUSTOMER', 'CREATE')
+  const canDelete = usePermission('CUSTOMER', 'DELETE')
 
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
 
   const filtered = customers.filter((c) => {
     const q = search.toLowerCase()
-    return c.name.toLowerCase().includes(q) || c.cpf.includes(search)
+    return c.name.toLowerCase().includes(q) || (c.cpf ?? '').includes(search)
   })
 
-  function formatCpf(cpf: string) {
+  function formatCpf(cpf?: string) {
+    if (!cpf) return '—'
     return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
   }
 
-  function formatPhone(phone: string) {
+  function formatPhone(phone?: string) {
+    if (!phone || phone === 'NULL') return '—'
     return phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
   }
 
@@ -88,39 +90,50 @@ export default function CustomerListPage() {
               </TableRow>
             ) : (
               filtered.map((customer) => (
-                <TableRow key={customer.id}>
-                  <TableCell className="font-medium">{customer.name}</TableCell>
+                <TableRow key={customer.id} className={customer.anonymized ? 'opacity-60' : undefined}>
+                  <TableCell className="font-medium">
+                    <span className="inline-flex items-center gap-2">
+                      {customer.name}
+                      {customer.anonymized && (
+                        <Badge variant="outline" className="text-[10px] font-normal">Anonimizado</Badge>
+                      )}
+                    </span>
+                  </TableCell>
                   <TableCell className="font-mono text-sm">{formatCpf(customer.cpf)}</TableCell>
                   <TableCell>{formatPhone(customer.phone)}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{CUSTOMER_SOURCE_LABELS[customer.source]}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                          Excluir
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta ação não pode ser desfeita. O cliente{' '}
-                            <strong>{customer.name}</strong> será removido permanentemente.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => removeCustomer.mutate(customer.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    {canDelete && !customer.anonymized && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                            Anonimizar
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Anonimizar cliente?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Em conformidade com a LGPD, os dados pessoais de{' '}
+                              <strong>{customer.name}</strong> (nome, CPF, telefone, e-mail) serão
+                              removidos permanentemente. O histórico de tickets, orçamentos e métricas
+                              é preservado. Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => removeCustomer.mutate(customer.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Anonimizar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

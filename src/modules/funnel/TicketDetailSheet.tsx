@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Trophy, XCircle } from 'lucide-react'
+import { Trophy, XCircle, CheckCircle2, CalendarClock } from 'lucide-react'
 import { useContactLogs, useChangeTicketStatus } from './funnel.queries'
 import AddContactLogDialog from './AddContactLogDialog'
 import {
@@ -9,12 +9,16 @@ import {
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { usePermission } from '@/hooks/usePermission'
+import { useAuthStore } from '@/store/auth.store'
+import { canTransition } from './transitions'
 import { TicketStatus } from '@/types/enums'
 import type { LeadTicket, Customer } from '@/types/models'
 import {
   SECTOR_LABELS, TICKET_STATUS_LABELS, TICKET_STATUS_COLOR,
-  CONTACT_CHANNEL_LABELS, TERMINAL_STATUSES,
+  CONTACT_CHANNEL_LABELS,
 } from '@/lib/labels'
 
 interface TicketDetailSheetProps {
@@ -28,20 +32,40 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
   const [addLogOpen, setAddLogOpen] = useState(false)
   const [lossOpen, setLossOpen] = useState(false)
   const [lossReason, setLossReason] = useState('')
+  const [returnOpen, setReturnOpen] = useState(false)
+  const [returnDate, setReturnDate] = useState('')
 
   const { data: logs = [] } = useContactLogs(ticket?.id ?? '')
   const changeStatus = useChangeTicketStatus()
+  const role = useAuthStore((state) => state.user?.role)
+  const canLogContact = usePermission('CONTACT_LOG', 'CREATE')
 
-  const isTerminal = ticket ? TERMINAL_STATUSES.includes(ticket.status) : false
+  // Ações derivadas da máquina de estados (espelha TRANSITION_ROLES do backend):
+  // WIN = comercial; LOSS = leads; POST_PROCEDURE = atendente/leads; retorno = pós-procedimento.
+  const canWin = ticket != null && canTransition(role, ticket.status, TicketStatus.WIN)
+  const canLoss = ticket != null && canTransition(role, ticket.status, TicketStatus.LOSS)
+  const canPostProcedure = ticket != null && canTransition(role, ticket.status, TicketStatus.POST_PROCEDURE)
+  const canScheduleReturn =
+    ticket != null &&
+    ticket.status === TicketStatus.POST_PROCEDURE &&
+    canTransition(role, ticket.status, TicketStatus.SCHEDULED)
 
-  function markStatus(status: TicketStatus, reason?: string) {
+  // POST_PROCEDURE → LOSS exige motivo (US-PPR-04); demais perdas o motivo é opcional.
+  const lossReasonRequired = ticket?.status === TicketStatus.POST_PROCEDURE
+
+  function markStatus(
+    status: TicketStatus,
+    opts?: { lossReason?: string; returnScheduledAt?: string },
+  ) {
     if (!ticket) return
     changeStatus.mutate(
-      { id: ticket.id, status, lossReason: reason },
+      { id: ticket.id, status, lossReason: opts?.lossReason, returnScheduledAt: opts?.returnScheduledAt },
       {
         onSuccess: () => {
           setLossOpen(false)
           setLossReason('')
+          setReturnOpen(false)
+          setReturnDate('')
           onOpenChange(false)
         },
       },
@@ -49,6 +73,8 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
   }
 
   if (!ticket) return null
+
+  const hasActions = canWin || canLoss || canPostProcedure || canScheduleReturn
 
   return (
     <>
@@ -83,7 +109,9 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
                   <div>
                     <p className="text-muted-foreground">CPF</p>
                     <p className="font-mono text-sm">
-                      {customer.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}
+                      {customer.cpf
+                        ? customer.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+                        : '—'}
                     </p>
                   </div>
                   <div>
@@ -94,33 +122,14 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
               )}
             </div>
 
-            {!isTerminal && (
+            {hasActions && (
               <div className="border-t pt-4 space-y-3">
                 <h3 className="font-medium">Ações</h3>
-                {!lossOpen ? (
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      className="bg-emerald-600 text-white hover:bg-emerald-700"
-                      disabled={changeStatus.isPending}
-                      onClick={() => markStatus(TicketStatus.WIN)}
-                    >
-                      <Trophy className="size-3.5" />
-                      Marcar como ganho
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      disabled={changeStatus.isPending}
-                      onClick={() => setLossOpen(true)}
-                    >
-                      <XCircle className="size-3.5" />
-                      Marcar como perdido
-                    </Button>
-                  </div>
-                ) : (
+                {lossOpen ? (
                   <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                    <label className="text-sm font-medium">Motivo da perda (opcional)</label>
+                    <label className="text-sm font-medium">
+                      Motivo da perda{lossReasonRequired ? '' : ' (opcional)'}
+                    </label>
                     <Textarea
                       value={lossReason}
                       onChange={(e) => setLossReason(e.target.value)}
@@ -138,12 +147,83 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
                       <Button
                         variant="destructive"
                         size="sm"
-                        disabled={changeStatus.isPending}
-                        onClick={() => markStatus(TicketStatus.LOSS, lossReason || undefined)}
+                        disabled={changeStatus.isPending || (lossReasonRequired && !lossReason.trim())}
+                        onClick={() => markStatus(TicketStatus.LOSS, { lossReason: lossReason || undefined })}
                       >
                         Confirmar perda
                       </Button>
                     </div>
+                  </div>
+                ) : returnOpen ? (
+                  <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+                    <label className="text-sm font-medium">Data do retorno</label>
+                    <Input
+                      type="datetime-local"
+                      value={returnDate}
+                      onChange={(e) => setReturnDate(e.target.value)}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setReturnOpen(false); setReturnDate('') }}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={changeStatus.isPending || !returnDate}
+                        onClick={() => markStatus(TicketStatus.SCHEDULED, { returnScheduledAt: returnDate })}
+                      >
+                        Agendar retorno
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {canWin && (
+                      <Button
+                        size="sm"
+                        className="bg-emerald-600 text-white hover:bg-emerald-700"
+                        disabled={changeStatus.isPending}
+                        onClick={() => markStatus(TicketStatus.WIN)}
+                      >
+                        <Trophy className="size-3.5" />
+                        Marcar como ganho
+                      </Button>
+                    )}
+                    {canPostProcedure && (
+                      <Button
+                        size="sm"
+                        disabled={changeStatus.isPending}
+                        onClick={() => markStatus(TicketStatus.POST_PROCEDURE)}
+                      >
+                        <CheckCircle2 className="size-3.5" />
+                        Procedimento realizado
+                      </Button>
+                    )}
+                    {canScheduleReturn && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={changeStatus.isPending}
+                        onClick={() => setReturnOpen(true)}
+                      >
+                        <CalendarClock className="size-3.5" />
+                        Agendar retorno
+                      </Button>
+                    )}
+                    {canLoss && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={changeStatus.isPending}
+                        onClick={() => setLossOpen(true)}
+                      >
+                        <XCircle className="size-3.5" />
+                        Marcar como perdido
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -152,9 +232,11 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
             <div className="border-t pt-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-medium">Histórico de contatos</h3>
-                <Button size="sm" onClick={() => setAddLogOpen(true)}>
-                  + Registrar
-                </Button>
+                {canLogContact && (
+                  <Button size="sm" onClick={() => setAddLogOpen(true)}>
+                    + Registrar
+                  </Button>
+                )}
               </div>
 
               {logs.length === 0 ? (
@@ -163,24 +245,35 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
                 <ol className="relative border-l border-border space-y-4 ml-3">
                   {[...logs]
                     .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
-                    .map((log) => (
-                      <li key={log.id} className="ml-4">
-                        <div className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full border border-background bg-primary" />
-                        <div>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(log.occurredAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                            {' · '}
-                            <span className="font-medium">{CONTACT_CHANNEL_LABELS[log.channel]}</span>
-                          </p>
-                          <p className="text-sm mt-0.5">{log.note}</p>
-                          {log.statusBefore && log.statusAfter && log.statusBefore !== log.statusAfter && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {TICKET_STATUS_LABELS[log.statusBefore]} → {TICKET_STATUS_LABELS[log.statusAfter]}
+                    .map((log) => {
+                      // Logs automáticos de mudança de status vêm com nota em inglês
+                      // ("Status changed: X → Y") — substituímos pela transição em PT.
+                      const isAutoStatusNote = /^status changed:/i.test(log.note ?? '')
+                      return (
+                        <li key={log.id} className="ml-4">
+                          <div className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full border border-background bg-primary" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(log.occurredAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                              {log.channel !== 'OTHER' && (
+                                <>
+                                  {' · '}
+                                  <span className="font-medium">{CONTACT_CHANNEL_LABELS[log.channel]}</span>
+                                </>
+                              )}
                             </p>
-                          )}
-                        </div>
-                      </li>
-                    ))}
+                            {log.statusBefore && log.statusAfter && log.statusBefore !== log.statusAfter && (
+                              <p className="mt-1">
+                                <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                                  {TICKET_STATUS_LABELS[log.statusBefore]} → {TICKET_STATUS_LABELS[log.statusAfter]}
+                                </span>
+                              </p>
+                            )}
+                            {!isAutoStatusNote && <p className="text-sm mt-1">{log.note}</p>}
+                          </div>
+                        </li>
+                      )
+                    })}
                 </ol>
               )}
             </div>
@@ -191,6 +284,7 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
       {ticket && (
         <AddContactLogDialog
           ticketId={ticket.id}
+          ticketStatus={ticket.status}
           open={addLogOpen}
           onOpenChange={setAddLogOpen}
         />

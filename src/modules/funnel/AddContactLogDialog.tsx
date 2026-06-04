@@ -1,36 +1,37 @@
 import { useForm, type DefaultValues } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ContactChannel } from '@/types/enums'
+import { ContactChannel, TicketStatus } from '@/types/enums'
 import { useCreateContactLog } from './funnel.queries'
 import { contactLogSchema, type ContactLogFormData } from './contact-log.schema'
 import { CONTACT_CHANNEL_LABELS } from '@/lib/labels'
+import { nowBrasiliaISO } from '@/lib/utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
 
 interface AddContactLogDialogProps {
   ticketId: string
+  ticketStatus: TicketStatus
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
+// O canal de contato só faz sentido enquanto o lead está na fase de contato,
+// antes de ser agendado para avaliação.
+const CONTACT_PHASE: TicketStatus[] = [TicketStatus.NEW, TicketStatus.IN_CONTACT]
+
 const DEFAULT_VALUES: DefaultValues<ContactLogFormData> = {
   channel: undefined,
   note: '',
-  occurredAt: '',
 }
 
-function nowLocal() {
-  const d = new Date()
-  d.setSeconds(0, 0)
-  return d.toISOString().slice(0, 16)
-}
-
-export default function AddContactLogDialog({ ticketId, open, onOpenChange }: AddContactLogDialogProps) {
+export default function AddContactLogDialog({
+  ticketId, ticketStatus, open, onOpenChange,
+}: AddContactLogDialogProps) {
   const createLog = useCreateContactLog(ticketId)
+  const showChannel = CONTACT_PHASE.includes(ticketStatus)
 
   const form = useForm<ContactLogFormData>({
     resolver: zodResolver(contactLogSchema),
@@ -38,24 +39,23 @@ export default function AddContactLogDialog({ ticketId, open, onOpenChange }: Ad
   })
 
   function handleOpenChange(value: boolean) {
-    if (!value) form.reset({ ...DEFAULT_VALUES, occurredAt: nowLocal() })
+    if (!value) form.reset(DEFAULT_VALUES)
     onOpenChange(value)
   }
 
-  // Pre-fill the date whenever the dialog opens
-  if (open && !form.getValues('occurredAt')) {
-    form.setValue('occurredAt', nowLocal())
-  }
-
   async function onSubmit(data: ContactLogFormData) {
+    if (showChannel && !data.channel) {
+      form.setError('channel', { message: 'Selecione o canal de contato' })
+      return
+    }
     try {
       await createLog.mutateAsync({
         ticketId,
-        channel: data.channel,
+        channel: data.channel ?? ContactChannel.OTHER,
         note: data.note,
-        occurredAt: new Date(data.occurredAt).toISOString(),
+        occurredAt: nowBrasiliaISO(),
       })
-      form.reset({ ...DEFAULT_VALUES, occurredAt: nowLocal() })
+      form.reset(DEFAULT_VALUES)
       onOpenChange(false)
     } catch {
       // erro tratado pelo estado isError da mutation
@@ -70,32 +70,24 @@ export default function AddContactLogDialog({ ticketId, open, onOpenChange }: Ad
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="channel" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Canal</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                  <FormControl>
-                    <SelectTrigger><SelectValue placeholder="Selecione o canal" /></SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Object.values(ContactChannel).map((c) => (
-                      <SelectItem key={c} value={c}>{CONTACT_CHANNEL_LABELS[c]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            <FormField control={form.control} name="occurredAt" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Data / hora</FormLabel>
-                <FormControl>
-                  <Input type="datetime-local" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
+            {showChannel && (
+              <FormField control={form.control} name="channel" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Canal</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                    <FormControl>
+                      <SelectTrigger><SelectValue placeholder="Selecione o canal" /></SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.values(ContactChannel).map((c) => (
+                        <SelectItem key={c} value={c}>{CONTACT_CHANNEL_LABELS[c]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            )}
 
             <FormField control={form.control} name="note" render={({ field }) => (
               <FormItem>
@@ -106,6 +98,10 @@ export default function AddContactLogDialog({ ticketId, open, onOpenChange }: Ad
                 <FormMessage />
               </FormItem>
             )} />
+
+            <p className="text-xs text-muted-foreground">
+              Registrado automaticamente com a data e hora atuais (horário de Brasília).
+            </p>
 
             {createLog.isError && (
               <p className="text-sm text-destructive">

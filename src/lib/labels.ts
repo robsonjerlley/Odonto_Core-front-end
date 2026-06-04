@@ -39,7 +39,7 @@ export const TICKET_STATUS_LABELS: Record<TicketStatus, string> = {
   IN_EVALUATION:  'Em Avaliação',
   NEGOTIATION:    'Em Negociação',
   WIN:            'Fechado',
-  PENDING:        'Aguardando',
+  PENDING:        'Em Espera',
   RECYCLED:       'Reativado',
   LOSS:           'Não Convertido',
   POST_PROCEDURE: 'Pós-Procedimento',
@@ -61,8 +61,10 @@ export const TICKET_STATUS_COLOR: Record<TicketStatus, string> = {
 
 /**
  * Ordem das colunas no Kanban (Pipeline).
- * WIN, LOSS e POST_PROCEDURE ficam fora do Kanban principal —
- * são exibidos em abas ou filtros laterais, não como colunas arrastáveis.
+ * Inclui WIN (Fechado) e POST_PROCEDURE para dar visibilidade e ponto de entrada
+ * às ações de pós-venda (procedimento realizado, agendar retorno, perda).
+ * LOSS e RECYCLED ficam fora: LOSS é estado morto e RECYCLED é transição
+ * automática do RecycleJob que reabre um novo ticket NEW.
  */
 export const KANBAN_COLUMN_ORDER: TicketStatus[] = [
   'NEW',
@@ -71,10 +73,12 @@ export const KANBAN_COLUMN_ORDER: TicketStatus[] = [
   'IN_EVALUATION',
   'NEGOTIATION',
   'PENDING',
+  'WIN',
+  'POST_PROCEDURE',
 ]
 
-/** Statuses terminais — não aparecem como colunas no Kanban. */
-export const TERMINAL_STATUSES: TicketStatus[] = ['WIN', 'LOSS', 'RECYCLED', 'POST_PROCEDURE']
+/** Statuses terminais/fora do fluxo arrastável do Kanban. */
+export const TERMINAL_STATUSES: TicketStatus[] = ['LOSS', 'RECYCLED']
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CANAIS DE CAPTAÇÃO (AdsChannel)

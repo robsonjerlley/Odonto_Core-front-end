@@ -4,13 +4,16 @@ import type { CustomerSource, AdsChannel, Sector, TicketStatus, ContactChannel }
 
 export interface CustomerCreateDTO {
   name: string
-  cpf: string
+  cpf?: string
   phone: string
+  phone2?: string
   email?: string
+  initialNote?: string
   source: CustomerSource
   adChannel?: AdsChannel
   adCampaign?: string
   referredBy?: string
+  channel?: ContactChannel   // canal do ContactLog inicial (quando há initialNote)
 }
 
 export interface CustomerUpdateDTO {

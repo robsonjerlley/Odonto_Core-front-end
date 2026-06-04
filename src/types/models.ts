@@ -38,9 +38,11 @@ export interface User {
 export interface Customer {
     id: string
     name: string
-    cpf: string
+    cpf?: string           // opcional — pode ser null (US-FUND-01)
     phone: string
-    email: string
+    phone2?: string
+    email?: string
+    initialNote?: string
     source: CustomerSource
     adChannel?: AdsChannel
     adCampaign?: string
@@ -48,6 +50,7 @@ export interface Customer {
     createdBy: string
     createdAt: string
     updatedAt: string
+    anonymized: boolean    // ADR-006 — cliente anonimizado (LGPD)
 }
 
 export interface LeadTicket {
@@ -74,8 +77,8 @@ export interface ContactLog {
     userId: string
     channel: ContactChannel
     note: string
-    statusBefore: TicketStatus
-    statusAfter: TicketStatus
+    statusBefore?: TicketStatus   // só em logs de mudança de status
+    statusAfter?: TicketStatus
     occurredAt: string
     createdAt: string
 }

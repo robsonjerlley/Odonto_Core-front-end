@@ -26,6 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { usePermission } from '@/hooks/usePermission'
 import type { LeadTicket, Customer, Deal, DealHistory } from '@/types/models'
 
 function currency(value: number | undefined | null): string {
@@ -288,6 +289,10 @@ export default function DealSheet({ ticket, customer, open, onOpenChange }: Deal
   const [closeOpen, setCloseOpen] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
 
+  const canCreate = usePermission('DEAL', 'CREATE')
+  const canUpdate = usePermission('DEAL', 'UPDATE')
+  const canClose = usePermission('DEAL', 'CLOSE')
+
   const { data: cachedDeal } = useDealForTicket(ticket?.id ?? '')
   const deal = cachedDeal ?? null
 
@@ -325,24 +330,30 @@ export default function DealSheet({ ticket, customer, open, onOpenChange }: Deal
 
             {/* ── Sem deal: formulário de criação ── */}
             {!deal && (
-              <div className="space-y-4">
+              canCreate ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum orçamento criado para este ticket. Adicione os procedimentos abaixo.
+                  </p>
+                  <Form {...createForm}>
+                    <form onSubmit={createForm.handleSubmit(handleCreate)} className="space-y-4">
+                      <ProcedureListEditor control={createForm.control} />
+                      {createDeal.isError && (
+                        <p className="text-sm text-destructive">
+                          Erro ao criar orçamento. Verifique se já existe um orçamento para este ticket.
+                        </p>
+                      )}
+                      <Button type="submit" className="w-full" disabled={createDeal.isPending}>
+                        {createDeal.isPending ? 'Criando...' : 'Criar orçamento'}
+                      </Button>
+                    </form>
+                  </Form>
+                </div>
+              ) : (
                 <p className="text-sm text-muted-foreground">
-                  Nenhum orçamento criado para este ticket. Adicione os procedimentos abaixo.
+                  Nenhum orçamento criado para este ticket.
                 </p>
-                <Form {...createForm}>
-                  <form onSubmit={createForm.handleSubmit(handleCreate)} className="space-y-4">
-                    <ProcedureListEditor control={createForm.control} />
-                    {createDeal.isError && (
-                      <p className="text-sm text-destructive">
-                        Erro ao criar orçamento. Verifique se já existe um orçamento para este ticket.
-                      </p>
-                    )}
-                    <Button type="submit" className="w-full" disabled={createDeal.isPending}>
-                      {createDeal.isPending ? 'Criando...' : 'Criar orçamento'}
-                    </Button>
-                  </form>
-                </Form>
-              </div>
+              )
             )}
 
             {/* ── Com deal: visão geral ── */}
@@ -362,7 +373,7 @@ export default function DealSheet({ ticket, customer, open, onOpenChange }: Deal
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium text-sm">Procedimentos</h3>
-                    {!isClosed && (
+                    {!isClosed && canUpdate && (
                       <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
                         Editar
                       </Button>
@@ -432,14 +443,18 @@ export default function DealSheet({ ticket, customer, open, onOpenChange }: Deal
                 )}
 
                 {/* Ações */}
-                {!isClosed && (
+                {!isClosed && (canUpdate || canClose) && (
                   <div className="flex gap-2 flex-wrap">
-                    <Button variant="outline" size="sm" onClick={() => setDiscountOpen(true)}>
-                      {deal.discountPct != null ? 'Alterar desconto' : 'Aplicar desconto'}
-                    </Button>
-                    <Button size="sm" onClick={() => setCloseOpen(true)}>
-                      Fechar deal
-                    </Button>
+                    {canUpdate && (
+                      <Button variant="outline" size="sm" onClick={() => setDiscountOpen(true)}>
+                        {deal.discountPct != null ? 'Alterar desconto' : 'Aplicar desconto'}
+                      </Button>
+                    )}
+                    {canClose && (
+                      <Button size="sm" onClick={() => setCloseOpen(true)}>
+                        Fechar deal
+                      </Button>
+                    )}
                   </div>
                 )}
 

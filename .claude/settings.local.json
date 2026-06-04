@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(npx shadcn@4.6.0 add form --overwrite)",
-      "Bash(npx --yes shadcn@4.6.0 add form)"
+      "Bash(npx --yes shadcn@4.6.0 add form)",
+      "Bash(Get-ChildItem -Path \"B:\\\\projects\\\\odontocore.crm.frontend\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(xargs grep -A 50 \"deals\\\\|deal\")"
     ]
   }
 }

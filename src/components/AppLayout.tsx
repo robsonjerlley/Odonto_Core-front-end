@@ -4,8 +4,7 @@ import {
   UserCog, Settings, LogOut, type LucideIcon,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
-import { useHasRole } from '@/hooks/useHasRole'
-import { Role } from '@/types/enums'
+import { can, type Resource, type Action } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { ROLE_LABELS, NAV_LABELS } from '@/lib/labels'
 
@@ -13,19 +12,21 @@ interface NavItem {
   to: string
   label: string
   icon: LucideIcon
+  resource: Resource
+  action: Action
   end?: boolean
 }
 
 const MAIN_NAV: NavItem[] = [
-  { to: '/',           label: NAV_LABELS.overview,     icon: LayoutDashboard, end: true },
-  { to: '/funnel',     label: NAV_LABELS.pipeline,     icon: Workflow },
-  { to: '/customers',  label: NAV_LABELS.patients,     icon: Users },
-  { to: '/commercial', label: NAV_LABELS.negotiations, icon: Handshake },
+  { to: '/',           label: NAV_LABELS.overview,     icon: LayoutDashboard, resource: 'ANALYTICS', action: 'READ', end: true },
+  { to: '/funnel',     label: NAV_LABELS.pipeline,     icon: Workflow,        resource: 'TICKET',    action: 'READ' },
+  { to: '/customers',  label: NAV_LABELS.patients,     icon: Users,           resource: 'CUSTOMER',  action: 'READ' },
+  { to: '/commercial', label: NAV_LABELS.negotiations, icon: Handshake,       resource: 'DEAL',      action: 'READ' },
 ]
 
 const ADMIN_NAV: NavItem[] = [
-  { to: '/users',  label: NAV_LABELS.team,     icon: UserCog },
-  { to: '/config', label: NAV_LABELS.settings, icon: Settings },
+  { to: '/users',  label: NAV_LABELS.team,     icon: UserCog,  resource: 'USER',   action: 'READ' },
+  { to: '/config', label: NAV_LABELS.settings, icon: Settings, resource: 'CONFIG', action: 'CONFIGURE' },
 ]
 
 function NavItemLink({ item }: { item: NavItem }) {
@@ -58,7 +59,10 @@ function NavItemLink({ item }: { item: NavItem }) {
 export default function AppLayout() {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
-  const isAdmin = useHasRole(Role.ADM_SYSTEM)
+  const role = user?.role
+
+  const mainNav = MAIN_NAV.filter((item) => can(role, item.resource, item.action))
+  const adminNav = ADMIN_NAV.filter((item) => can(role, item.resource, item.action))
 
   function handleLogout() {
     logout()
@@ -83,16 +87,16 @@ export default function AppLayout() {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-2">
-          {MAIN_NAV.map((item) => (
+          {mainNav.map((item) => (
             <NavItemLink key={item.to} item={item} />
           ))}
 
-          {isAdmin && (
+          {adminNav.length > 0 && (
             <>
               <p className="px-3 pt-4 pb-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                 Administração
               </p>
-              {ADMIN_NAV.map((item) => (
+              {adminNav.map((item) => (
                 <NavItemLink key={item.to} item={item} />
               ))}
             </>

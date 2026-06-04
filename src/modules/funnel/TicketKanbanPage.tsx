@@ -4,11 +4,11 @@ import type { DragEndEvent } from '@dnd-kit/core'
 import { useTickets, useCustomers, useChangeTicketStatus } from './funnel.queries'
 import KanbanColumn from './KanbanColumn'
 import TicketDetailSheet from './TicketDetailSheet'
-import CreateTicketDialog from './CreateTicketDialog'
-import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useAuthStore } from '@/store/auth.store'
+import { canTransition } from './transitions'
+import { toast } from '@/components/Toaster'
 import type { LeadTicket } from '@/types/models'
-import type { TicketStatus } from '@/types/enums'
+import { TicketStatus } from '@/types/enums'
 import { KANBAN_COLUMN_ORDER, TICKET_STATUS_LABELS } from '@/lib/labels'
 
 const COLUMNS: Array<{ status: TicketStatus; label: string }> = KANBAN_COLUMN_ORDER.map(
@@ -19,10 +19,10 @@ export default function TicketKanbanPage() {
   const { data: tickets = [] } = useTickets()
   const { data: customers = [] } = useCustomers()
   const changeStatus = useChangeTicketStatus()
+  const role = useAuthStore((state) => state.user?.role)
 
   const [selectedTicket, setSelectedTicket] = useState<LeadTicket | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [createOpen, setCreateOpen] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -34,6 +34,17 @@ export default function TicketKanbanPage() {
 
     const ticketId = active.id as string
     const newStatus = over.id as TicketStatus
+    const ticket = tickets.find((t) => t.id === ticketId)
+    if (!ticket) return
+
+    // Valida a transição contra a máquina de estados antes de chamar o backend.
+    if (!canTransition(role, ticket.status, newStatus)) {
+      toast(
+        `Transição não permitida: ${TICKET_STATUS_LABELS[ticket.status]} → ${TICKET_STATUS_LABELS[newStatus]}.`,
+        'error',
+      )
+      return
+    }
 
     changeStatus.mutate({ id: ticketId, status: newStatus })
   }
@@ -47,17 +58,12 @@ export default function TicketKanbanPage() {
 
   return (
     <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Pipeline</h1>
-          <p className="text-sm text-muted-foreground">
-            Acompanhe e mova os leads pelas etapas do funil.
-          </p>
-        </div>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="size-4" />
-          Novo ticket
-        </Button>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Pipeline</h1>
+        <p className="text-sm text-muted-foreground">
+          Acompanhe e mova os leads pelas etapas do funil. Tickets são abertos
+          automaticamente no cadastro do paciente.
+        </p>
       </div>
 
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
@@ -74,8 +80,6 @@ export default function TicketKanbanPage() {
           ))}
         </div>
       </DndContext>
-
-      <CreateTicketDialog open={createOpen} onOpenChange={setCreateOpen} />
 
       <TicketDetailSheet
         ticket={selectedTicket}
