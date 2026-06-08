@@ -36,7 +36,7 @@ export default function CustomerListPage() {
     return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
   }
 
-  function formatPhone(phone?: string) {
+  function formatPhone(phone?: string | null) {
     if (!phone || phone === 'NULL') return '—'
     return phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
   }
