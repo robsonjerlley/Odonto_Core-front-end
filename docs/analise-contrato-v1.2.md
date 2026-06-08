@@ -113,111 +113,54 @@ interface DealHistory {
 
 ## 2. Decisões para o Arquiteto
 
-### DEC-01 — `CUSTOMER:READ` nos roles de avaliação (ADR pendente)
+### DEC-01 — `CUSTOMER:READ` nos roles de avaliação ✅ RESOLVIDO
 
-**⚠️ MARCAR PARA REVISÃO DO ARQUITETO**
+**Resolução (2026-06-08):** leitura do `PermissionSeeder.java` confirmou que o backend **já tem** `CUSTOMER:READ` para avaliadores:
+- `ADM_EVALUATOR | CUSTOMER | READ | SECTOR` (linha 122)
+- `USER_EVALUATOR | CUSTOMER | READ | GLOBAL` (linha 135)
 
-**Situação atual (frontend):**
-```ts
-// permissions.ts — linha 65-77
-[Role.ADM_EVALUATOR]: [
-  'CUSTOMER:READ',  // ← presente
-  'DEAL:CREATE', 'DEAL:READ', 'DEAL:UPDATE',
-  'TICKET:READ', 'TICKET:UPDATE',
-  'CONTACT_LOG:READ',
-],
-[Role.USER_EVALUATOR]: [
-  'CUSTOMER:READ',  // ← presente
-  'DEAL:CREATE', 'DEAL:READ', 'DEAL:UPDATE',
-  'TICKET:READ', 'TICKET:UPDATE',
-  'CONTACT_LOG:READ',
-],
-```
+O contrato §8 estava incompleto — não listava essas linhas. O frontend estava correto ao conceder `CUSTOMER:READ` para os dois roles. **Nenhuma alteração necessária no frontend ou no backend.**
 
-**O que o contrato §8 diz:**
-```
-ADM_EVALUATOR | DEAL | CREATE, READ, UPDATE | SECTOR
-ADM_EVALUATOR | TICKET | READ, UPDATE | SECTOR
-ADM_EVALUATOR | CONTACT_LOG | READ | SECTOR
-USER_EVALUATOR | DEAL | CREATE, READ, UPDATE | OWN
-USER_EVALUATOR | TICKET | READ, UPDATE | OWN
-USER_EVALUATOR | CONTACT_LOG | READ | GLOBAL
-```
-→ **Nenhuma linha de `CUSTOMER` para avaliadores no §8.**
-
-**O problema:**
-- O frontend concede `CUSTOMER:READ` a avaliadores, o que faz o item "Pacientes" aparecer no menu para eles.
-- Chamar `GET /customers` como avaliador resultará em **403** (o backend não tem essa regra semeada).
-- Contudo, para criar um deal em `EvaluationsPage`, o avaliador precisa ver dados do cliente (nome, CPF). Esses dados chegam hoje via `LeadTicket.customerId` + chamada de customer.
-
-**Opções — decisão do arquiteto:**
-1. **Remover `CUSTOMER:READ` do frontend para avaliadores** → hide o menu "Pacientes", exibir dados do cliente apenas dentro do contexto do ticket (pelo `customerId`). O backend 403 fica como proteção. Exige que a `EvaluationsPage` carregue o customer por `id` (não via listagem).
-2. **Adicionar `CUSTOMER:READ` no backend para avaliadores** → seed `CUSTOMER:READ:SECTOR` para `ADM_EVALUATOR` e `USER_EVALUATOR`. Faz sentido se avaliadores precisam buscar histórico de outros tickets do paciente.
-3. **Manter o status quo (risco aceito)** → UI mostra "Pacientes" mas a tela retorna 403, gerando confusão ao usuário.
+A nota do contrato §8 sobre escopos divergentes (USER_EVALUATOR com GLOBAL, não OWN) não afeta o frontend — o scope é aplicado e enforçado exclusivamente pelo backend.
 
 ---
 
-### DEC-02 — `scheduledAt` em transição `IN_CONTACT → SCHEDULED`
+### DEC-02 — `scheduledAt` em transição `IN_CONTACT → SCHEDULED` ✅ RESOLVIDO
 
-**⚠️ MARCAR PARA REVISÃO DO ARQUITETO**
+**Resolução (2026-06-08):** leitura de `LeadTicketServiceImpl.changeStatus()` (linhas 191-200) confirmou o comportamento:
 
-**Situação no frontend (`TicketDetailSheet.tsx` linha 380):**
-```ts
-// Para qualquer transição → SCHEDULED:
-markStatus(activeForm, { returnScheduledAt: scheduleDate })
+```java
+if (dto.status() == SCHEDULED && currentStatus != POST_PROCEDURE) {
+    leadTicket.setCurrentSector(EVALUATOR);
+    if (dto.returnScheduledAt() != null) {
+        leadTicket.setScheduledAt(dto.returnScheduledAt());  // ← usa o campo
+    }
+}
 ```
 
-**O que o contrato §10 diz:**
+O backend **usa `returnScheduledAt` para setar `scheduledAt`** em `IN_CONTACT → SCHEDULED` (e qualquer outra origem → SCHEDULED exceto POST_PROCEDURE, que tem caminho próprio via `applyScheduledReturn`). O frontend já enviava o campo corretamente. **Nenhuma alteração necessária.**
 
-| Transição | Efeito no ticket |
-|-----------|------------------|
-| `POST_PROCEDURE → SCHEDULED` | `scheduledAt = returnScheduledAt` |
-| `IN_CONTACT → SCHEDULED` | — (sem entrada explícita em efeitos colaterais) |
-
-O campo `returnScheduledAt` é definido como obrigatório **apenas** para `POST_PROCEDURE → SCHEDULED`. Para `IN_CONTACT → SCHEDULED`, o contrato não documenta como `scheduledAt` do ticket é preenchido.
-
-**O problema:**
-- O frontend coleta uma data/hora e envia como `returnScheduledAt` para AMBAS as transições.
-- Se o backend não mapeia `returnScheduledAt` para `scheduledAt` em `IN_CONTACT → SCHEDULED`, o campo `ticket.scheduledAt` nunca é preenchido para a consulta inicial — apenas para o retorno pós-procedimento.
-
-**Verificação necessária:** Ler `LeadTicketServiceImpl.changeStatus()` no backend para confirmar se `scheduledAt` é atualizado em `IN_CONTACT → SCHEDULED` via `returnScheduledAt` ou via outro mecanismo.
-
-**Se `scheduledAt` NÃO é atualizado:** a data da consulta inicial fica null no ticket, e `TicketDetailSheet.tsx` linha 291 (`{ticket.scheduledAt && ...}`) nunca exibe a data agendada. Impacto UX relevante.
+O contrato §10 estava incompleto — não documentava este efeito colateral para transições que não partem de POST_PROCEDURE.
 
 ---
 
-### DEC-03 — Discriminador de logs automáticos vs manuais na timeline
+### DEC-03 — Discriminador de logs automáticos vs manuais na timeline ✅ RESOLVIDO
 
-**Prioridade: baixa — decidir antes da próxima sprint de timeline**
+**Resolução (commit `856e4a0`, 2026-06-08):** discriminador corrigido em `TicketDetailSheet.tsx`:
 
-**Situação atual (`TicketDetailSheet.tsx` linha 473):**
 ```ts
+// Antes (regex frágil — não cobre todos os logs automáticos):
 const isAutoStatusNote = /^status changed:/i.test(log.note ?? '')
+
+// Depois (discriminador do contrato §12):
+const isAutoLog = log.statusBefore != null && log.statusAfter != null
+const isGenericNote = /^status changed:/i.test(log.note ?? '')
+const showNote = !isAutoLog || !isGenericNote
 ```
 
-**O que o contrato §12 especifica:**
-```
-Log manual  → statusBefore = null, statusAfter = null
-Log auto    → statusBefore != null, statusAfter != null, channel = OTHER
-```
+**Decisão de design adotada:** notas genéricas "Status changed: X → Y" são ocultadas (redundantes com o badge de transição). Notas contextuais de logs automáticos — `lossReason` em `POST_PROCEDURE → LOSS`, "Procedimento realizado" em `WIN → POST_PROCEDURE`, "Retorno agendado para…" em `POST_PROCEDURE → SCHEDULED` — continuam visíveis por agregar contexto útil ao usuário.
 
-**O problema:** a regex cobre os logs genéricos "Status changed: X → Y" mas falha para logs automáticos com notas específicas:
-- `WIN → POST_PROCEDURE`: note = "Procedimento realizado. Início do acompanhamento pós-procedimento." → `isAutoStatusNote = false` → nota exibida (OK — contexto útil)
-- `POST_PROCEDURE → SCHEDULED`: note = "Retorno agendado para {data}." → `isAutoStatusNote = false` → nota exibida (OK)
-- `POST_PROCEDURE → LOSS`: note = `lossReason` → `isAutoStatusNote = false` → nota exibida (OK)
-
-Na prática o comportamento atual é aceitável — a regex apenas esconde o ruído puro de "Status changed". Os logs com contexto real (Procedimento realizado, Retorno agendado, motivo de perda) são sempre exibidos.
-
-**Risco:** se o backend mudar o formato das notas automáticas, a regex quebrará silenciosamente.
-
-**Opção mais robusta (contrato §12):**
-```ts
-const isManualLog = log.statusBefore == null && log.statusAfter == null
-// Mostrar nota apenas se for log manual
-{isManualLog && <p className="text-sm mt-1">{log.note}</p>}
-```
-
-**Trade-off UX:** com o discriminador correto, as notas contextuais dos logs automáticos (Procedimento realizado, Retorno agendado) NÃO seriam exibidas como texto — apenas o badge de transição apareceria. Isso pode ser bom (menos ruído) ou ruim (perde contexto). Decisão de design.
+Esta abordagem segue o discriminador do contrato §12 (`statusBefore/statusAfter`) e é mais robusta que a regex original, que falharia silenciosamente se o backend alterasse o formato das notas automáticas.
 
 ---
 
@@ -259,14 +202,14 @@ const isManualLog = log.statusBefore == null && log.statusAfter == null
 | DIV-02a | `src/types/models.ts` | `Customer.phone: string → string \| null` |
 | DIV-02b | `src/types/models.ts` | `DealHistory.fieldChanged: string → string \| null` |
 
-### Aguardar decisão do arquiteto
+### Decisões investigadas e encerradas
 
-| # | Decisão | Impacto |
-|---|---------|---------|
-| DEC-01 | `CUSTOMER:READ` para avaliadores — manter, remover ou adicionar no backend | Menu "Pacientes" para avaliadores; possíveis 403 em produção |
-| DEC-02 | `scheduledAt` em `IN_CONTACT → SCHEDULED` — verificar backend | Data da consulta inicial pode não ser persistida |
-| DEC-03 | Discriminador de logs automáticos — regex vs `statusBefore/statusAfter` | UX da timeline de contatos |
+| # | Decisão | Resolução |
+|---|---------|-----------|
+| DEC-01 | `CUSTOMER:READ` para avaliadores | ✅ Backend já tinha — `PermissionSeeder.java` linhas 122/135. Frontend correto. |
+| DEC-02 | `scheduledAt` em `IN_CONTACT → SCHEDULED` | ✅ Backend usa `returnScheduledAt` para setar `scheduledAt` — `LeadTicketServiceImpl.java` linhas 195-199. Frontend correto. |
+| DEC-03 | Discriminador de logs automáticos | ✅ Corrigido em `TicketDetailSheet.tsx` (commit `856e4a0`). |
 
 ---
 
-*Gerado em 2026-06-08 por análise direta do contrato v1.2 e código-fonte frontend.*
+*Gerado em 2026-06-08 — todas as divergências e decisões encerradas em 2026-06-08.*

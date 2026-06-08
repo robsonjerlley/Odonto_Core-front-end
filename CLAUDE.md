@@ -417,7 +417,8 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → P
 #### No frontend (commit `856e4a0`, 2026-06-08):
 - **DIV-01** — `permissions.ts`: adicionado `CUSTOMER:READ` para `ADM_COMMERCIAL` e `USER_COMMERCIAL` (menu Pacientes agora aparece para roles comerciais).
 - **DIV-02** — `models.ts`: corrigidos tipos nullable — `Customer.phone: string | null` e `DealHistory.fieldChanged: string | null`.
-- **DEC-03** — `TicketDetailSheet.tsx`: discriminador de logs automáticos corrigido de regex no texto para `statusBefore != null && statusAfter != null` (contrato §12), preservando notas contextuais (lossReason, pós-procedimento).
+- **DEC-02** — ✅ INVESTIGADO — sem alteração necessária. Dúvida: o backend usava `returnScheduledAt` para setar `scheduledAt` em `IN_CONTACT → SCHEDULED`? Leitura de `LeadTicketServiceImpl.java` (linhas 191-200) confirmou que sim — o bloco `if (dto.status() == SCHEDULED && currentStatus != POST_PROCEDURE)` seta `scheduledAt = dto.returnScheduledAt()` quando o campo não é nulo. O frontend já enviava o campo corretamente; o comportamento estava correto antes da investigação.
+- **DEC-03** — ✅ RESOLVIDO. Discriminador de logs automáticos na timeline (`TicketDetailSheet.tsx`) corrigido de regex no texto da nota para `statusBefore != null && statusAfter != null` (discriminador especificado no contrato §12). Notas genéricas "Status changed: X → Y" são ocultadas por serem redundantes com o badge de transição; notas contextuais de logs automáticos (lossReason em `POST_PROCEDURE → LOSS`, "Procedimento realizado" em `WIN → POST_PROCEDURE`, "Retorno agendado" em `POST_PROCEDURE → SCHEDULED`) continuam visíveis por não serem genéricas.
 
 ### Nota sobre escopos no PermissionSeeder vs contrato §8
 
