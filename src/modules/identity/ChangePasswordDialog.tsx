@@ -33,13 +33,11 @@ export default function ChangePasswordDialog({ open, onOpenChange, username }: C
   })
 
   async function onSubmit(data: ChangePasswordFormData) {
+    // O backend valida apenas newPassword (api-spec v0). A senha atual é
+    // coletada só para confirmação local de UX e não é enviada.
     await updatePassword.mutateAsync({
       username,
-      data: {
-        username,
-        oldPassword: data.oldPassword,
-        newPassword: data.newPassword,
-      },
+      data: { newPassword: data.newPassword },
     })
     form.reset()
     onOpenChange(false)

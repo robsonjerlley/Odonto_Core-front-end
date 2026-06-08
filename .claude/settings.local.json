@@ -10,7 +10,10 @@
       "Bash(xargs grep -A 50 \"deals\\\\|deal\")",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Read(//b/projects/odontocore.crm/odontocore.crm/**)",
+      "Bash(npx eslint *)",
+      "Bash(echo \"EXIT: $?\")"
     ]
   }
 }

@@ -44,7 +44,7 @@ export interface Customer {
     email?: string
     initialNote?: string
     source: CustomerSource
-    adChannel?: AdsChannel
+    adsChannel?: AdsChannel
     adCampaign?: string
     referredBy?: string
     createdBy: string

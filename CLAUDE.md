@@ -194,7 +194,7 @@ GET    /api/v1/analytics/bonus/{targetId}?periodRef=YYYY-MM
   email?: string,
   initialNote?: string,
   source: CustomerSource,
-  adChannel?: AdsChannel, adCampaign?: string,
+  adsChannel?: AdsChannel, adCampaign?: string,  // ← campo do contrato é `adsChannel` (api-spec v0)
   referredBy?: string,    // UUID de outro Customer
   createdBy: string,
   createdAt, updatedAt,
@@ -365,7 +365,7 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → P
 > Análise completa em `docs/analise-contrato-v1.2.md`.
 
 ### D0 — Listagens paginadas (`Page<T>`) ✅ RESOLVIDO — *causa principal do app quebrado*
-- **Backend real:** `GET /users`, `/customers`, `/tickets`, `/contact-logs` retornam **`Page<T>` do Spring Data** (`{ content: [], totalElements, ... }`), **não arrays**. Os filtros viraram **query params** (`?sector=&role=`, `?customerId=&status=&assignedTo=`, `?name=&phone=&adChannel=`, `?ticketId=`).
+- **Backend real:** `GET /users`, `/customers`, `/tickets`, `/contact-logs` retornam **`Page<T>` do Spring Data** (`{ content: [], totalElements, ... }`), **não arrays**. Os filtros viraram **query params** (`?sector=&role=`, `?customerId=&status=&assignedTo=`, `?name=&phone=&adsChannel=`, `?ticketId=`).
 - **Sintoma:** o frontend tratava `r.data` como array → `.map`/`.filter` quebravam todas as telas principais.
 - **Correção:** tipo `Page<T>` em `src/types/models.ts`; services desempacotam `r.data.content`; filtros antigos por path (`findBySector/{}`, `findByCustomer/{}`, `findByTicketId/{}`) trocados por query params.
 

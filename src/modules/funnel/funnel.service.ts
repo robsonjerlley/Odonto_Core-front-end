@@ -10,7 +10,7 @@ export interface CustomerCreateDTO {
   email?: string
   initialNote?: string
   source: CustomerSource
-  adChannel?: AdsChannel
+  adsChannel?: AdsChannel
   adCampaign?: string
   referredBy?: string
   channel?: ContactChannel   // canal do ContactLog inicial (quando há initialNote)

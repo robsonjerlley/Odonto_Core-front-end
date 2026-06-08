@@ -25,7 +25,7 @@ const DEFAULT_VALUES: DefaultValues<CustomerFormData> = {
   initialNote: '',
   channel: undefined,
   source: undefined,
-  adChannel: undefined,
+  adsChannel: undefined,
   adCampaign: '',
 }
 
@@ -54,7 +54,7 @@ export default function CreateCustomerDialog({ open, onOpenChange }: CreateCusto
         email: data.email || undefined,
         initialNote: data.initialNote || undefined,
         channel: data.initialNote ? data.channel : undefined,
-        adChannel: data.adChannel ?? undefined,
+        adsChannel: data.adsChannel ?? undefined,
         adCampaign: data.adCampaign || undefined,
       }
       await createCustomer.mutateAsync(payload)
@@ -160,7 +160,7 @@ export default function CreateCustomerDialog({ open, onOpenChange }: CreateCusto
               )} />
 
               {source === 'ADS_PAID' && (
-                <FormField control={form.control} name="adChannel" render={({ field }) => (
+                <FormField control={form.control} name="adsChannel" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Canal de Ads</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ?? ''}>

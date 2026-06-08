@@ -18,9 +18,8 @@ interface CreateUserPayload {
     role: Role
 }
 
+// Backend UserPasswordUpdateRequestDTO aceita apenas newPassword (api-spec v0)
 export interface UpdatePasswordDTO {
-    username: string
-    oldPassword: string
     newPassword: string
 }
 

@@ -18,7 +18,7 @@ export const customerSchema = z.object({
     .enum(Object.values(ContactChannel) as [ContactChannel, ...ContactChannel[]])
     .optional(),
   source: z.enum(Object.values(CustomerSource) as [CustomerSource, ...CustomerSource[]]),
-  adChannel: z
+  adsChannel: z
     .enum(Object.values(AdsChannel) as [AdsChannel, ...AdsChannel[]])
     .optional(),
   adCampaign: z.string().optional(),
