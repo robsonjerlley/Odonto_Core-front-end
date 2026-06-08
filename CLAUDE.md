@@ -66,11 +66,12 @@ enum CustomerSource { ADS_PAID, ORGANIC, INDICATION }
 ## API — Endpoints completos
 
 > **⚠ FONTE DA VERDADE:** o contrato oficial de integração está em
-> `B:\projects\odontocore.crm\odontocore.crm\.claude\specs\frontend-integration-contract.md`
-> (v1.0, 2026-06-03). Ele descreve endpoints, DTOs, enums, modelo de erro, RBAC,
+> `B:\projects\odontocore.crm.frontend\frontend-integration-contract.md`
+> (v1.2, 2026-06-08). Ele descreve endpoints, DTOs, enums, modelo de erro, RBAC,
 > máquina de estados, paginação `Page<T>`, refresh token e traz um apêndice
-> TypeScript pronto. O bloco abaixo é histórico e pode estar defasado — em caso
-> de divergência, **o contrato vence**. O frontend foi alinhado a ele em 2026-06-04.
+> TypeScript pronto. O bloco abaixo é histórico e **defasado** — em caso
+> de divergência, **o contrato vence**. O frontend foi alinhado ao v1.2 em 2026-06-08.
+> Análise completa de divergências em `docs/analise-contrato-v1.2.md`.
 
 **Base URL:** `http://localhost:8080` (dev local)
 
@@ -186,9 +187,19 @@ GET    /api/v1/analytics/bonus/{targetId}?periodRef=YYYY-MM
 
 ### Customer
 ```ts
-{ id, name, cpf, phone, email, source: CustomerSource,
+{ id, name,
+  cpf?: string,           // nullable — obrigatório apenas em → SCHEDULED
+  phone: string | null,   // "NULL" (string literal) após anonimização LGPD
+  phone2?: string,
+  email?: string,
+  initialNote?: string,
+  source: CustomerSource,
   adChannel?: AdsChannel, adCampaign?: string,
-  createdAt, updatedAt, createdBy, referredBy? }
+  referredBy?: string,    // UUID de outro Customer
+  createdBy: string,
+  createdAt, updatedAt,
+  anonymized: boolean     // ADR-006; verificar antes de exibir dados pessoais
+}
 ```
 
 ### LeadTicket
@@ -212,8 +223,8 @@ GET    /api/v1/analytics/bonus/{targetId}?periodRef=YYYY-MM
 
 ### User
 ```ts
-{ id, name, username, sector: Sector, role: Role,
-  active, createdBy?, createdAt, updatedAt }
+// UserResponseDTO retorna apenas estes 5 campos — active/createdAt/updatedAt NÃO são expostos
+{ id, name, username, sector: Sector, role: Role }
 ```
 
 ### DataRangeDTO
@@ -227,7 +238,8 @@ GET    /api/v1/analytics/bonus/{targetId}?periodRef=YYYY-MM
   adsRoi: AdsRoiResultDTO[],
   stageConversion: StageConversionResultDTO,
   sectorDropOff: SectorDropOffResultDTO[],
-  topPerformers: UserPerformanceResultDTO[] }
+  topPerformers: UserPerformanceResultDTO[],
+  totalExpectedCash: number }   // caixa esperado consolidado do período
 ```
 
 ### AdsRoiResultDTO
@@ -253,7 +265,9 @@ GET    /api/v1/analytics/bonus/{targetId}?periodRef=YYYY-MM
 ```ts
 { userId: string, name: string, sector: Sector,
   totalAssigned: number, totalConverted: number,
-  conversionPct: number, avgTicketValue: number, calculatedBonus: number }
+  conversionPct: number, avgTicketValue: number,
+  expectedCash: number,      // avgTicketValue × paymentMethod.conversionFactor
+  calculatedBonus: number }
 ```
 
 ### DealResponseDTO
@@ -269,7 +283,8 @@ GET    /api/v1/analytics/bonus/{targetId}?periodRef=YYYY-MM
 ### DealHistoryResponseDTO
 ```ts
 { dealId, changedBy, changedBySector: Sector,
-  fieldChanged, valueBefore, valueAfter, occurredAt }
+  fieldChanged: string | null,   // nullable — contrato §6
+  valueBefore, valueAfter, occurredAt }
 ```
 
 ---
@@ -302,10 +317,10 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → P
 - [x] Protected route wrapper com redirect por role/sector
 - [x] Redirect pós-login por role
 
-### Fase 3 — Identity (Usuários) ⚠️ BUGS CRÍTICOS
+### Fase 3 — Identity (Usuários) ✅
 - [x] Listagem de usuários com filtro por sector/role
-- [x] Formulário criação de usuário — UI criada, mas rota diverge do backend (ver Divergências D2)
-- [x] Troca de senha — UI criada, mas rota e campo divergem do backend (ver Divergências D3)
+- [x] Formulário criação de usuário — `POST /api/v1/users`
+- [x] Troca de senha — `PATCH /api/v1/users/{username}/newPassword`
 - [x] Delete com confirmação
 - [x] Componente `<RoleGuard>` para controle de visibilidade por role
 
@@ -346,7 +361,8 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → P
 
 ## Divergências conhecidas frontend ↔ backend
 
-> Levantadas em 2026-06-02. **Resolvidas em 2026-06-03** com varredura dos controllers reais do backend (`alinhamento frontend ↔ backend`).
+> Levantadas em 2026-06-02. Resolvidas progressivamente até 2026-06-08.
+> Análise completa em `docs/analise-contrato-v1.2.md`.
 
 ### D0 — Listagens paginadas (`Page<T>`) ✅ RESOLVIDO — *causa principal do app quebrado*
 - **Backend real:** `GET /users`, `/customers`, `/tickets`, `/contact-logs` retornam **`Page<T>` do Spring Data** (`{ content: [], totalElements, ... }`), **não arrays**. Os filtros viraram **query params** (`?sector=&role=`, `?customerId=&status=&assignedTo=`, `?name=&phone=&adChannel=`, `?ticketId=`).
@@ -381,7 +397,40 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → P
 - Backend **não tem** `DELETE /tickets/{id}` nem `DELETE /contact-logs/{id}`. Removidos `removeTicket`/`removeContactLog` e o botão de excluir log na `TicketDetailSheet`.
 - `RecycleConfigRequestDTO` aceita **apenas `afterDays`** (sem `sector`) — campo de setor removido do form de reciclagem.
 
-> Observação: a seção "API — Endpoints completos" acima ainda descreve as rotas antigas (path-based, sem paginação). Os controllers reais em `B:\projects\odontocore.crm` são a fonte da verdade; ao mexer num módulo, confira o controller correspondente.
+> A seção "API — Endpoints completos" acima descreve as rotas antigas (path-based, sem paginação) — está defasada. O contrato v1.2 e os controllers em `B:\projects\odontocore.crm` são a fonte da verdade; ao mexer num módulo, confira o controller correspondente.
+
+### Correções contrato v1.1 — ADR-013 (2026-06-07) ✅ RESOLVIDAS NO BACKEND
+
+- **M1/F1** — `LeadTicketServiceImpl.search()`: filtros `customerId`/`status`/`assignedTo` ignorados. Corrigido — filtros cumulativos AND via JPA Specifications.
+- **M2/F2** — `CustomerServiceImpl`/`ContactLogServiceImpl` `search()`: scope OWN/SECTOR/INTAKE não recortava. Corrigido — scope aplicado no SQL via subquery `EXISTS`.
+- **Mudança de semântica para o frontend:** filtros de listagem passaram de "mutuamente exclusivos por prioridade" para **cumulativos (AND)**. O frontend usa parâmetros isolados — sem impacto.
+
+### Correções contrato v1.2 (2026-06-08) ✅ RESOLVIDAS
+
+#### No backend:
+- **B1** — `CUSTOMER:READ` ausente para `ADM_COMMERCIAL` e `USER_COMMERCIAL` no `PermissionSeeder` → 403 em toda leitura de cliente por esses roles. Corrigido: `CUSTOMER:READ:SECTOR` adicionado para ambos.
+- **B2** — `DealServiceImpl.applyDiscount()` usava `Action.CONFIGURE` → 403 ao aplicar desconto. Corrigido para `Action.UPDATE`.
+- **B3** — `USER_COMMERCIAL, DEAL:UPDATE` com scope `OWN` → vendedor não atualizava deals do setor. Corrigido para `SECTOR`.
+- **B4** — `AnalyticsServiceImpl.getUserPerformance()` passava `null` no lugar do `userId` → `USER_ATTENDANT` recebia 403 ao consultar própria performance. Corrigido.
+- **B5** — `CustomerServiceImpl.update()` não persistia `phone2`. Corrigido.
+
+#### No frontend (commit `856e4a0`, 2026-06-08):
+- **DIV-01** — `permissions.ts`: adicionado `CUSTOMER:READ` para `ADM_COMMERCIAL` e `USER_COMMERCIAL` (menu Pacientes agora aparece para roles comerciais).
+- **DIV-02** — `models.ts`: corrigidos tipos nullable — `Customer.phone: string | null` e `DealHistory.fieldChanged: string | null`.
+- **DEC-03** — `TicketDetailSheet.tsx`: discriminador de logs automáticos corrigido de regex no texto para `statusBefore != null && statusAfter != null` (contrato §12), preservando notas contextuais (lossReason, pós-procedimento).
+
+### Nota sobre escopos no PermissionSeeder vs contrato §8
+
+O `PermissionSeeder.java` diverge do contrato §8 em alguns escopos (não afeta o frontend — o frontend só verifica capacidade, não escopo):
+
+| Role | Resource:Action | Contrato §8 diz | Seeder real |
+|------|----------------|-----------------|-------------|
+| `ADM_LEADS` | `CUSTOMER:READ` | `SECTOR` | `INTAKE` |
+| `USER_LEADS` | `CUSTOMER:READ` | `OWN` | `INTAKE` |
+| `USER_ATTENDANT` | `CUSTOMER:UPDATE` | `OWN` | `INTAKE` |
+| `USER_EVALUATOR` | `CUSTOMER:READ` | não listado | `GLOBAL` |
+
+O backend (seeder) é a fonte da verdade para comportamento em produção. O contrato §8 deve ser corrigido pelo time.
 
 ---
 
@@ -398,6 +447,7 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → P
 - **Timezone** — backend fixado em America/Sao_Paulo (ADR-009 no backend). `LocalDateTime` é horário de Brasília; exibir naïve, **sem** conversão UTC. O envio usa `nowBrasiliaISO` (`lib/utils.ts`) — ida e volta simétricas.
 - **Guardas de rota** — `RequireRoute path=...` + `canAccessRoute` em `lib/permissions.ts`. Rotas por capacidade (`can`) e analytics por escopo (`analyticsScope`: GLOBAL=Overview `/`, OWN=`/meu-desempenho`).
 - **Toast** — store + função `toast()` em `lib/toast.ts`; `components/Toaster.tsx` só exporta o componente (Fast Refresh). Variantes cva do shadcn extraídas para `*-variants.ts` (`button-variants.ts`, `badge-variants.ts`).
+- **Discriminador de logs na timeline** — `TicketDetailSheet.tsx` usa `statusBefore != null && statusAfter != null` para identificar logs automáticos de transição (contrato §12). Notas genéricas "Status changed: X → Y" são ocultadas (redundantes com o badge); notas contextuais de logs automáticos (lossReason, "Procedimento realizado", "Retorno agendado") são exibidas. Evolução futura: campo `logType: 'MANUAL' | 'SYSTEM'` no backend tornará a distinção explícita.
 
 ---
 
