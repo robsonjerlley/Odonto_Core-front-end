@@ -470,7 +470,12 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
                         new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
                     )
                     .map((log) => {
-                      const isAutoStatusNote = /^status changed:/i.test(log.note ?? '')
+                      // Discriminador contrato §12: logs automáticos têm statusBefore/After preenchidos.
+                      // Notas genéricas "Status changed: X → Y" são redundantes com o badge — ocultar.
+                      // Notas contextuais de logs automáticos (lossReason, "Procedimento realizado"…) são úteis — exibir.
+                      const isAutoLog = log.statusBefore != null && log.statusAfter != null
+                      const isGenericNote = /^status changed:/i.test(log.note ?? '')
+                      const showNote = !isAutoLog || !isGenericNote
                       return (
                         <li key={log.id} className="ml-4">
                           <div className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full border border-background bg-primary" />
@@ -498,7 +503,7 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
                                   </span>
                                 </p>
                               )}
-                            {!isAutoStatusNote && (
+                            {showNote && (
                               <p className="text-sm mt-1">{log.note}</p>
                             )}
                           </div>

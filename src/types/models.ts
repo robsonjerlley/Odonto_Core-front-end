@@ -39,7 +39,7 @@ export interface Customer {
     id: string
     name: string
     cpf?: string           // opcional — pode ser null (US-FUND-01)
-    phone: string
+    phone: string | null   // "NULL" (string) ou null após anonimização LGPD
     phone2?: string
     email?: string
     initialNote?: string
@@ -115,7 +115,7 @@ export interface DealHistory {
     dealId: string
     changedBy: string
     changedBySector: Sector
-    fieldChanged: string
+    fieldChanged: string | null
     valueBefore: string
     valueAfter: string
     occurredAt: string
