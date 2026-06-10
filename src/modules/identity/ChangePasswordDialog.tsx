@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 const changePasswordSchema = z.object({
-  oldPassword: z.string().min(1, 'Informe a senha atual'),
   newPassword: z.string().min(8, 'Mínimo 8 caracteres'),
   confirm: z.string(),
 }).refine((d) => d.newPassword === d.confirm, {
@@ -29,12 +28,10 @@ export default function ChangePasswordDialog({ open, onOpenChange, username }: C
 
   const form = useForm<ChangePasswordFormData>({
     resolver: zodResolver(changePasswordSchema),
-    defaultValues: { oldPassword: '', newPassword: '', confirm: '' },
+    defaultValues: { newPassword: '', confirm: '' },
   })
 
   async function onSubmit(data: ChangePasswordFormData) {
-    // O backend valida apenas newPassword (api-spec v0). A senha atual é
-    // coletada só para confirmação local de UX e não é enviada.
     await updatePassword.mutateAsync({
       username,
       data: { newPassword: data.newPassword },
@@ -51,14 +48,6 @@ export default function ChangePasswordDialog({ open, onOpenChange, username }: C
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="oldPassword" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Senha atual</FormLabel>
-                <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-
             <FormField control={form.control} name="newPassword" render={({ field }) => (
               <FormItem>
                 <FormLabel>Nova senha</FormLabel>

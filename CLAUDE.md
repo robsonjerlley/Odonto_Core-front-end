@@ -85,15 +85,14 @@ POST  /api/v1/authentication/login
 ### Identity — Usuários
 ```
 POST   /api/v1/users/create
-       body: { name, username, passwordHash, sector, role }
+       body: { name, username, password, sector, role }
 GET    /api/v1/users
 GET    /api/v1/users/findByUsername/{username}
 GET    /api/v1/users/findBySector/{sector}
 GET    /api/v1/users/findBySectorAndRole/{sector}/{role}
 GET    /api/v1/users/existsByUsername/{username}
-PATCH  /api/v1/users/updatePassword/{username}/passwordHash
-       body: { username, oldPassword, newPasswordHash }
-       ⚠ o backend usa apenas newPasswordHash; oldPassword é validado mas ignorado no service
+PATCH  /api/v1/users/{username}/newPassword
+       body: { newPassword }
 DELETE /api/v1/users/{id}
 ```
 
@@ -374,10 +373,10 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → P
 - **Correção:** `closeDeal` aponta para `/{id}/status` em `commercial.service.ts`.
 
 ### D2 — Rota de criação de usuário ✅ RESOLVIDO
-- **Backend real:** `POST /api/v1/users` com body `{ name, username, passwordHash, sector, role }`. Frontend já alinhado.
+- **Backend real:** `POST /api/v1/users` com body `{ name, username, password, sector, role }`. Frontend já alinhado.
 
 ### D3 — Rota de troca de senha ✅ RESOLVIDO
-- **Backend real:** `PATCH /api/v1/users/{username}/newPassword` com body `{ username, oldPassword, newPassword }` (todos `@NotBlank`). Frontend já alinhado.
+- **Backend real:** `PATCH /api/v1/users/{username}/newPassword` com body `{ newPassword }`. Frontend já alinhado.
 - **Login:** busca do usuário pós-login usa `GET /api/v1/users/username/{username}` (não `findByUsername/{}`).
 
 ### D4 — Enum `POST_PROCEDURE` ✅ RESOLVIDO — presente em `src/types/enums.ts`.

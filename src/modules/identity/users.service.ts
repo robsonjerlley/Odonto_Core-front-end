@@ -10,15 +10,6 @@ export interface CreateUserDTO {
     role: Role
 }
 
-interface CreateUserPayload {
-    name: string
-    username: string
-    passwordHash: string
-    sector: Sector
-    role: Role
-}
-
-// Backend UserPasswordUpdateRequestDTO aceita apenas newPassword (api-spec v0)
 export interface UpdatePasswordDTO {
     newPassword: string
 }
@@ -36,16 +27,8 @@ export const usersService = {
     findBySectorAndRole: (sector: Sector, role: Role) =>
         api.get<Page<User>>('/api/v1/users', { params: { sector, role } }).then((r) => r.data.content),
 
-    create: (data: CreateUserDTO) => {
-        const payload: CreateUserPayload = {
-            name: data.name,
-            username: data.username,
-            passwordHash: data.password,
-            sector: data.sector,
-            role: data.role,
-        }
-        return api.post<User>('/api/v1/users', payload).then((r) => r.data)
-    },
+    create: (data: CreateUserDTO) =>
+        api.post<User>('/api/v1/users', data).then((r) => r.data),
 
     updatePassword: (username: string, data: UpdatePasswordDTO) =>
         api.patch(`/api/v1/users/${username}/newPassword`, data),
