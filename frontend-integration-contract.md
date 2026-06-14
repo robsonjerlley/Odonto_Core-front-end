@@ -1,10 +1,44 @@
 # Contrato de Integração Frontend ↔ Backend — OdontoCore CRM
 
-**Versão:** 1.2  
-**Data:** 2026-06-08  
+**Versão:** 1.4  
+**Data:** 2026-06-14  
 **Branch:** main  
-**Commit de referência:** (Split 2)  
-**Fonte da verdade:** código Java (controllers, DTOs, services, enums, seeder)
+**Commit de referência:** `949a4a9` (HEAD)  
+**Fonte da verdade:** código Java (controllers, DTOs, services, enums, `PermissionSeeder`, `GlobalExceptionHandler`)
+
+> **Changelog 1.4 (2026-06-14) — ADR-015 implementada: analytics scope-aware.** Endpoints
+> `/ads-roi`, `/post-procedure` e `/bonus/{id}` removidos como endpoints independentes — seus dados
+> ficam acessíveis apenas via `GET /analytics/dashboard` (GLOBAL). Dashboard passa a incluir
+> `postProcedures` (`PostProcedureResultDTO`). `getConversionByStage` e `getDropOffBySector` agora
+> respondem corretamente para escopo `SECTOR` (ADMs de setor recebem dados filtrados ao próprio
+> setor). `getUserPerformance` reforça guarda `OWN` — papel `OWN` só pode consultar o próprio
+> `targetUserId`. Testes unitários reescritos para cobrir os novos comportamentos de scope. Ver §13 e §15.
+
+> **Changelog 1.3 (2026-06-11) — sincronização total com o código.** Esta revisão reescreveu o
+> contrato a partir da leitura direta de todos os controllers, DTOs, enums, services e do
+> `PermissionSeeder`. Correções relevantes que **alteram a integração**:
+> - **`POST /users`**: o campo do body é **`password`** (não `passwordHash`).
+> - **`PATCH /users/{username}/newPassword`**: o body é **apenas `{ "newPassword": "..." }`** (não há
+>   `username` nem `oldPassword` no body). Exige permissão **`USER:UPDATE`** (na matriz, só `ADM_SYSTEM`).
+>   Enviar uma senha **igual à atual** retorna **422**.
+> - **Customer usa `adsChannel`** (não `adChannel`) em **todos os pontos**: campo do request de criação,
+>   campo da resposta e **query param** de `GET /customers`. O campo de campanha permanece `adCampaign`.
+> - **`GET /customers?name=`** faz **match exato** (igualdade), **não** "contains/case-insensitive".
+> - **Matriz RBAC (§8/§9/§14) reescrita** conforme o `PermissionSeeder` real: escopo **`INTAKE`** para
+>   `LEADS`/`ATTENDANT`, **`ANALYTICS:READ` para todos os papéis**, `CUSTOMER:READ` para avaliadores etc.
+> - **Login com credenciais inválidas → 401 _com_ corpo JSON** (`BadCredentialsException`).
+> - **`POST /authentication/refresh` com token de assinatura inválida → 500** (não há handler de
+>   `JwtException`; cai no handler genérico).
+> - **`IllegalArgumentException` → 422** (handler dedicado); mensagem do 500 genérico é
+>   `"Erro Interno do Servidor"`.
+> - **`GET /users/{id}` e `GET /users/username/{username}` não fazem checagem de permissão** (qualquer
+>   usuário autenticado) — o restante de `/users` é exclusivo de `ADM_SYSTEM`.
+> - **Analytics**: na implementação atual quase todos os endpoints passam `targetSector=null` e
+>   `targetOwnerId=null` ao `checkOrThrow`, então na prática **só papéis de escopo `GLOBAL`
+>   (`ADM_SYSTEM`) obtêm sucesso**; `user-performance` é exceção (ver §13).
+> - **Invariantes 422 em deals** documentadas (criar exige ticket `IN_EVALUATION`; desconto 0–100; não
+>   reabrir deal fechado).
+> Ver §15 para a lista completa de divergências.
 
 > **Changelog 1.2 (2026-06-08):** correções de RBAC e dados — `CUSTOMER:READ` adicionado para
 > `ADM_COMMERCIAL` e `USER_COMMERCIAL` (SECTOR); `DEAL:UPDATE` de `USER_COMMERCIAL` corrigido para
@@ -45,11 +79,11 @@
 |--------|------|-----------|-----------------------------------|--------------|
 | POST | `/api/v1/authentication/login` | Login | público | 200 |
 | POST | `/api/v1/authentication/refresh` | Renovar token | público | 200 |
-| POST | `/api/v1/users` | Criar usuário | USER:CREATE | 201 |
-| PATCH | `/api/v1/users/{username}/newPassword` | Trocar senha | autenticado | 200 |
-| GET | `/api/v1/users` | Listar/buscar usuários | USER:READ | 200 |
-| GET | `/api/v1/users/{id}` | Buscar por UUID | USER:READ | 200 |
-| GET | `/api/v1/users/username/{username}` | Buscar por username | USER:READ | 200 |
+| POST | `/api/v1/users` | Criar usuário | USER:CREATE (só ADM_SYSTEM) | 201 |
+| PATCH | `/api/v1/users/{username}/newPassword` | Trocar senha | USER:UPDATE (só ADM_SYSTEM) | 200 |
+| GET | `/api/v1/users` | Listar/buscar usuários | USER:READ (só ADM_SYSTEM) | 200 |
+| GET | `/api/v1/users/{id}` | Buscar por UUID | autenticado (sem checagem RBAC) | 200 |
+| GET | `/api/v1/users/username/{username}` | Buscar por username | autenticado (sem checagem RBAC) | 200 |
 | DELETE | `/api/v1/users/{id}` | Deletar usuário | USER:DELETE | 204 |
 | POST | `/api/v1/customers` | Criar cliente + ticket + log | CUSTOMER:CREATE | 201 |
 | PATCH | `/api/v1/customers/{id}` | Atualizar cliente | CUSTOMER:UPDATE | 200 |
@@ -66,7 +100,7 @@
 | GET | `/api/v1/contact-logs` | Buscar logs (por ticket) | CONTACT_LOG:READ | 200 |
 | POST | `/api/v1/deals/{ticketId}` | Criar deal | DEAL:CREATE | 201 |
 | PATCH | `/api/v1/deals/{id}` | Atualizar procedimentos | DEAL:UPDATE | 200 |
-| GET | `/api/v1/deals/ticketId/{ticketId}` | Buscar deal do ticket | DEAL:READ | 200 ou 204 |
+| GET | `/api/v1/deals/ticketId/{ticketId}` | Buscar deal (não-arquivado) do ticket | autenticado (sem checagem RBAC) | 200 ou 204 |
 | PATCH | `/api/v1/deals/{id}/discount` | Aplicar desconto | DEAL:UPDATE | 200 |
 | PATCH | `/api/v1/deals/{id}/status` | Fechar deal | DEAL:CLOSE | 200 |
 | GET | `/api/v1/deals/{id}/dealHistory` | Histórico do deal | DEAL:READ | 200 |
@@ -76,13 +110,10 @@
 | GET | `/api/v1/config/recycle` | Consultar config de reciclagem | CONFIG:CONFIGURE | 200 |
 | GET | `/api/v1/config/bonus` | Consultar configs de bônus | CONFIG:CONFIGURE | 200 |
 | GET | `/api/v1/config/ads-investment` | Consultar investimentos ADS | CONFIG:CONFIGURE | 200 |
-| GET | `/api/v1/analytics/ads-roi` | ROI de canal ADS | ANALYTICS:READ | 200 |
-| GET | `/api/v1/analytics/conversion` | Conversão por etapa | ANALYTICS:READ | 200 |
-| GET | `/api/v1/analytics/dropoff` | Abandono por setor | ANALYTICS:READ | 200 |
-| GET | `/api/v1/analytics/user-performance/{targetUserId}` | Performance de usuário | ANALYTICS:READ | 200 |
-| GET | `/api/v1/analytics/bonus/{id}` | Bônus apurado | ANALYTICS:READ | 200 |
-| GET | `/api/v1/analytics/post-procedure` | Métricas pós-procedimento | ANALYTICS:READ | 200 |
-| GET | `/api/v1/analytics/dashboard` | Dashboard global | ANALYTICS:READ | 200 |
+| GET | `/api/v1/analytics/conversion` | Conversão por etapa | ANALYTICS:READ (GLOBAL + SECTOR) | 200 |
+| GET | `/api/v1/analytics/dropoff` | Abandono por setor | ANALYTICS:READ (GLOBAL + SECTOR) | 200 |
+| GET | `/api/v1/analytics/user-performance/{targetUserId}` | Performance de usuário | ANALYTICS:READ (GLOBAL + OWN) | 200 |
+| GET | `/api/v1/analytics/dashboard` | Dashboard global — inclui `postProcedures` e `adsRoi` | ANALYTICS:READ (GLOBAL only) | 200 |
 
 ---
 
@@ -171,12 +202,24 @@ O fuso da JVM agora é **fixado em `America/Sao_Paulo`** no boot (`Application.m
 | `ResourceAlreadyExistsException` | 409 | `"Conflict"` | CPF duplicado na atualização de cliente |
 | `AccessDeniedException` | 403 | `"Forbidden"` | RBAC negou a operação |
 | `DiscountApprovalRequiredException` | 403 | `"Forbidden"` | Desconto acima do limite sem aprovação |
-| `IllegalStateException` | 422 | `"Unprocessable Entity"` | Transição inválida, CPF ausente no agendamento, returnScheduledAt no passado |
+| `IllegalStateException` | 422 | `"Unprocessable Content"` | Transição inválida, CPF ausente no agendamento, `returnScheduledAt` no passado, deal fora de `IN_EVALUATION`, desconto fora de 0–100, deal já fechado/arquivado |
+| `IllegalArgumentException` | 422 | `"Unprocessable Content"` | Ex.: nova senha igual à atual em `PATCH /users/{username}/newPassword` |
 | `MethodArgumentNotValidException` | 400 | `"Bad Request"` | Bean Validation falhou no body |
 | `ConstraintViolationException` | 400 | `"Bad Request"` | Validação de @PathVariable/@RequestParam |
-| `ExpiredJwt` / token inválido | 401 | *(sem corpo)* | Token expirado ou inválido — Spring retorna 401 sem JSON |
-| Token ausente | 401 | *(sem corpo)* | Header Authorization ausente |
-| Qualquer outra | 500 | `"Internal Server Error"` | `"Erro interno do servidor"` |
+| `BadCredentialsException` | 401 | `"Unauthorized"` | **Login com credenciais inválidas — retorna corpo JSON** (shape padrão de erro) |
+| Token expirado/inválido no filtro | 401 | *(sem corpo)* | `JwtAuthenticationFilter` não autentica → `HttpStatusEntryPoint` retorna 401 puro |
+| Token ausente | 401 | *(sem corpo)* | Header Authorization ausente em rota protegida |
+| Qualquer outra (inclui `JwtException` no `/refresh`) | 500 | `"Internal Server Error"` | `"Erro Interno do Servidor"` |
+
+> **Atenção ao 422:** o `error` (reason phrase) do HTTP 422 nesta versão do Spring é
+> **`"Unprocessable Content"`** (e não `"Unprocessable Entity"`). Trate ambos defensivamente se
+> precisar comparar a string.
+>
+> **Atenção ao 401:** há **duas** formas de 401. (a) **Credenciais inválidas no login** passam pelo
+> `GlobalExceptionHandler` e **vêm com corpo JSON** no shape padrão. (b) **Token ausente/expirado/
+> inválido em rotas protegidas** são barrados antes do controller pelo `HttpStatusEntryPoint` e vêm
+> **sem corpo**. Já o `POST /authentication/refresh` com token de **assinatura adulterada** lança
+> `JwtException` que cai no handler genérico → **500** (não 401).
 
 ### Exemplos JSON
 
@@ -215,7 +258,7 @@ O fuso da JVM agora é **fixado em `America/Sao_Paulo`** no boot (`Application.m
 ```json
 {
   "status": 422,
-  "error": "Unprocessable Entity",
+  "error": "Unprocessable Content",
   "message": "Transition not allowed IN_CONTACT -> WIN",
   "timestamp": "2026-06-03T14:30:00.123"
 }
@@ -231,7 +274,17 @@ O fuso da JVM agora é **fixado em `America/Sao_Paulo`** no boot (`Application.m
 }
 ```
 
-**401 — Token ausente/inválido:** HTTP 401 sem corpo (sem JSON).
+**401 — Token ausente/inválido em rota protegida:** HTTP 401 **sem corpo**.
+
+**401 — Login com credenciais inválidas:** HTTP 401 **com corpo** no shape padrão:
+```json
+{
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "Bad credentials",
+  "timestamp": "2026-06-03T14:30:00.123"
+}
+```
 
 ---
 
@@ -273,9 +326,13 @@ Envia o token **expirado** (ou ainda válido) para obter um novo. Não requer au
 
 **Response 200:** mesmo shape de `AuthResponseDTO`
 
+> O backend extrai o `username` do token **ignorando a expiração** (`extractUserNameIgnoringExpiration`),
+> recarrega o usuário e emite um token novo. Por isso aceita token expirado.
+
 **Erros:**
 - `400` se `token` estiver em branco
-- `401` se o token tiver assinatura inválida (adulterado) — sem corpo
+- `500` se o token tiver **assinatura inválida** (adulterado): lança `JwtException`, que **não tem
+  handler dedicado** e cai no handler genérico (`"Erro Interno do Servidor"`). ⚠️ Não é 401.
 
 ### Claims do JWT
 
@@ -310,10 +367,14 @@ GET /api/v1/users/username/{username}
 
 ### Tratamento de 401
 
-- Interceptor Axios detecta 401
-- Chama `POST /authentication/refresh` com o token atual
-- Se refresh retornar 200: substitui o token e retenta a requisição original
-- Se refresh retornar 401: limpa store, redireciona para `/login`
+- Interceptor Axios detecta 401 **sem corpo** (token expirado/ausente em rota protegida)
+- Chama `POST /authentication/refresh` com o token atual (o backend aceita token expirado, pois ignora
+  a expiração ao extrair o `username`)
+- Se refresh retornar **200**: substitui o token e retenta a requisição original
+- Se refresh retornar **400** (token em branco) ou **500** (assinatura inválida): limpa store,
+  redireciona para `/login`
+- ⚠️ O refresh **não** retorna 401 para token inválido — ver §7.1. Trate qualquer status ≠ 200 do
+  refresh como "sessão perdida".
 
 ### CORS
 
@@ -498,7 +559,7 @@ Todos os enums são enviados e recebidos como **string com o nome exato do valor
 | `id` | `UUID` | não | PK gerado automaticamente |
 | `name` | `String` | não | Nome completo |
 | `username` | `String` | não | Login único (usado no JWT subject) |
-| `passwordHash` | `String` | não | BCrypt — nunca exposto na API |
+| `password` | `String` | não | Hash BCrypt — nunca exposto na API (campo da entidade chama-se `password`) |
 | `sector` | `Sector` | não | Setor ao qual o usuário pertence |
 | `role` | `Role` | não | Papel do usuário no sistema |
 | `active` | `boolean` | não | Se o usuário pode logar |
@@ -507,7 +568,7 @@ Todos os enums são enviados e recebidos como **string com o nome exato do valor
 | `updatedAt` | `LocalDateTime` | não | @UpdateTimestamp |
 
 **Exposto na API via UserResponseDTO:** `id, name, username, sector, role`
-> `passwordHash`, `active`, `createdBy`, `createdAt`, `updatedAt` **não são expostos**.
+> `password`, `active`, `createdBy`, `createdAt`, `updatedAt` **não são expostos**.
 
 ### Customer (crm_db → tabela customers)
 
@@ -518,11 +579,11 @@ Todos os enums são enviados e recebidos como **string com o nome exato do valor
 | `cpf` | `String` | sim | CPF formatado; constraint UNIQUE; null após anonimização |
 | `phone` | `String` | não | Telefone principal; **"NULL" (string)** após anonimização |
 | `phone2` | `String` | sim | Telefone secundário |
-| `address` | `String` | sim | Endereço — **não exposto na API** (não está nos DTOs) |
+| `address` | `String` | sim | Endereço — **existe na entidade mas não há campo correspondente em nenhum DTO** (nunca é preenchido na criação/atualização; só é zerado na anonimização). Para o frontend, **não existe**. |
 | `email` | `String` | sim | E-mail |
 | `initialNote` | `String` (TEXT) | sim | Observação do atendente no momento da **entrada** do lead |
 | `source` | `CustomerSource` | não | Origem do cliente (ADS_PAID, ORGANIC, INDICATION) |
-| `adChannel` | `AdsChannel` | sim | Canal de ADS se source=ADS_PAID |
+| `adsChannel` | `AdsChannel` | sim | Canal de ADS se source=ADS_PAID. **Nome do campo JSON: `adsChannel`** (não `adChannel`) |
 | `adCampaign` | `String` | sim | Nome da campanha ADS |
 | `referredBy` | `UUID` | sim | UUID de outro Customer que indicou este |
 | `createdBy` | `UUID` | não | UUID do usuário que cadastrou |
@@ -539,8 +600,9 @@ Todos os enums são enviados e recebidos como **string com o nome exato do valor
 - `initialNote` → `null`
 - `address` → `null`
 - `referredBy` → `null`
+- `address` → `null`
 - `anonymized` → `true`
-- Preservados: `id`, `source`, `adChannel`, `createdAt`, `createdBy`
+- Preservados (não tocados pela anonimização): `id`, `source`, `adsChannel`, `adCampaign`, `createdAt`, `createdBy`, `updatedAt`
 
 > **Para o frontend:** verificar o campo `anonymized === true` antes de exibir dados do cliente. Nunca testar `name === "CLIENTE ANONIMIZADO"`.
 
@@ -674,7 +736,7 @@ Todos os enums são enviados e recebidos como **string com o nome exato do valor
 {
   "name": "João Silva",
   "username": "joao.silva",
-  "passwordHash": "Senha@123",
+  "password": "Senha@123",
   "sector": "LEADS",
   "role": "USER_LEADS"
 }
@@ -684,11 +746,12 @@ Todos os enums são enviados e recebidos como **string com o nome exato do valor
 |-------|------|-----------|
 | `name` | `string` | `@NotBlank @NotNull` |
 | `username` | `string` | `@NotBlank` |
-| `passwordHash` | `string` | `@NotBlank @Size(min=8)` |
+| `password` | `string` | `@NotBlank @Size(min=8)` — texto plano; o backend faz o hash BCrypt |
 | `sector` | `Sector` | `@NotNull` |
 | `role` | `Role` | `@NotNull` |
 
-> O campo se chama `passwordHash` no DTO, mas contém a senha em texto plano enviada pelo frontend. O backend faz o hash com BCrypt.
+> ⚠️ O campo do body é **`password`** (não `passwordHash`). Envie a senha em texto plano; o backend
+> aplica BCrypt. `active` é forçado `true` e `createdBy` é o usuário autenticado.
 
 ```json
 // Response 201
@@ -711,32 +774,38 @@ Todos os enums são enviados e recebidos como **string com o nome exato do valor
 
 #### PATCH /api/v1/users/{username}/newPassword
 
-**Path param:** `username` (string)
+**Permissão:** `USER:UPDATE` (na matriz, **só `ADM_SYSTEM`**). ⚠️ Um usuário comum **não** troca a
+própria senha por este endpoint — recebe 403.
+
+**Path param:** `username` (string) — o usuário-alvo cuja senha será trocada.
 
 ```json
-// Request
+// Request — APENAS newPassword
 {
-  "username": "joao.silva",
-  "oldPassword": "SenhaAntiga@123",
   "newPassword": "SenhaNova@456"
 }
 ```
 
 | Campo | Validação |
 |-------|-----------|
-| `username` | `@NotBlank @NotNull` |
-| `oldPassword` | `@NotBlank` |
 | `newPassword` | `@NotBlank @Size(min=8)` |
+
+> ⚠️ O body contém **apenas `newPassword`**. Não existem campos `username` (vem do path) nem
+> `oldPassword` no body — **não há verificação da senha antiga**.
 
 **Response 200:** `UserResponseDTO`
 
 | Erro | Causa |
 |------|-------|
+| 403 | papel sem `USER:UPDATE` (qualquer um que não seja ADM_SYSTEM) |
 | 404 | username não encontrado |
+| 422 | a nova senha é **igual** à senha atual (`"Nova senha não deve ser igual a senha atual."`) |
 
 ---
 
 #### GET /api/v1/users
+
+**Permissão:** `USER:READ` (só `ADM_SYSTEM`).
 
 **Query params:**
 
@@ -748,12 +817,16 @@ Todos os enums são enviados e recebidos como **string com o nome exato do valor
 
 **Response 200:** `Page<UserResponseDTO>`
 
-> Se `sector` e `role` forem ambos fornecidos: filtra por ambos. Se só `sector`: filtra por setor. Se nenhum: retorna todos.
+> Lógica de filtro (mutuamente exclusiva, **não** cumulativa, ao contrário das outras listagens): se
+> `sector` **e** `role` forem ambos fornecidos → filtra por ambos; senão, se só `sector` → filtra por
+> setor; caso contrário (mesmo que só `role` seja enviado) → **retorna todos**. Ou seja, enviar apenas
+> `role` é ignorado.
 
 ---
 
 #### GET /api/v1/users/{id}
 
+**Permissão:** **nenhuma checagem de RBAC** — basta estar autenticado.  
 **Path param:** `id` (UUID)  
 **Response 200:** `UserResponseDTO`  
 **Erro 404:** usuário não encontrado
@@ -762,6 +835,8 @@ Todos os enums são enviados e recebidos como **string com o nome exato do valor
 
 #### GET /api/v1/users/username/{username}
 
+**Permissão:** **nenhuma checagem de RBAC** — basta estar autenticado. É o endpoint usado no fluxo
+pós-login para obter o `UserResponseDTO` completo a partir do `sub` do JWT.  
 **Path param:** `username` (string)  
 **Response 200:** `UserResponseDTO`  
 **Erro 404:** usuário não encontrado
@@ -794,7 +869,7 @@ Cria o cliente, abre um `LeadTicket(NEW)` automaticamente no setor do usuário l
   "email": "maria@email.com",
   "initialNote": "Cliente veio pelo Instagram, interesse em implante",
   "source": "ADS_PAID",
-  "adChannel": "INSTAGRAM",
+  "adsChannel": "INSTAGRAM",
   "adCampaign": "Campanha-Maio-2026",
   "referredBy": null,
   "channel": "INSTAGRAM"
@@ -807,13 +882,16 @@ Cria o cliente, abre um `LeadTicket(NEW)` automaticamente no setor do usuário l
 | `cpf` | `string` | `@CPF` (formato brasileiro), opcional |
 | `phone` | `string` | `@NotBlank` |
 | `phone2` | `string` | opcional |
-| `email` | `string` | opcional |
+| `email` | `string` | opcional (sem validação `@Email`) |
 | `initialNote` | `string` | opcional — nota de entrada |
 | `source` | `CustomerSource` | `@NotNull` |
-| `adChannel` | `AdsChannel` | opcional (relevante se source=ADS_PAID) |
+| `adsChannel` | `AdsChannel` | opcional (relevante se source=ADS_PAID) — **nome do campo: `adsChannel`** |
 | `adCampaign` | `string` | opcional |
 | `referredBy` | `UUID` | opcional (relevante se source=INDICATION) |
-| `channel` | `ContactChannel` | opcional — canal da nota inicial |
+| `channel` | `ContactChannel` | opcional — canal da nota inicial (default `OTHER` se ausente e houver `initialNote`) |
+
+> O `ContactLog` de entrada só é criado se `initialNote` vier preenchida (não-blank). O ticket inicial
+> é aberto com `currentSector` = **setor do usuário autenticado** (não o `source`).
 
 ```json
 // Response 201
@@ -826,7 +904,7 @@ Cria o cliente, abre um `LeadTicket(NEW)` automaticamente no setor do usuário l
   "email": "maria@email.com",
   "initialNote": "Cliente veio pelo Instagram...",
   "source": "ADS_PAID",
-  "adChannel": "INSTAGRAM",
+  "adsChannel": "INSTAGRAM",
   "adCampaign": "Campanha-Maio-2026",
   "createdAt": "2026-06-03T14:30:00",
   "updatedAt": "2026-06-03T14:30:00",
@@ -884,13 +962,17 @@ Cria o cliente, abre um `LeadTicket(NEW)` automaticamente no setor do usuário l
 
 | Param | Tipo | Obrigatório | Match |
 |-------|------|-------------|-------|
-| `phone` | `string` | não | exato |
-| `name` | `string` | não | contains, case-insensitive |
-| `adChannel` | `AdsChannel` | não | exato |
+| `phone` | `string` | não | **exato** (igualdade) |
+| `name` | `string` | não | **exato** (igualdade — `cb.equal`); ⚠️ **não** é "contains" nem case-insensitive |
+| `adsChannel` | `AdsChannel` | não | exato — **nome do param: `adsChannel`** |
 | `page`, `size`, `sort` | Pageable | não | — |
 
+> ⚠️ **Correção 1.3:** o param de canal chama-se **`adsChannel`** (não `adChannel`) e o filtro de
+> `name` é **igualdade exata**, não busca parcial. Para busca parcial por nome, o backend ainda não
+> oferece suporte.
+>
 > **Filtros são cumulativos (AND)** — ADR-013. Quando mais de um param é enviado, todos são
-> aplicados simultaneamente (`phone` E `name` E `adChannel`). A semântica anterior de "um filtro por
+> aplicados simultaneamente (`phone` E `name` E `adsChannel`). A semântica anterior de "um filtro por
 > prioridade" foi revogada.
 >
 > **Visibilidade por scope** (aplicada no SQL, transparente ao consumidor): o resultado já vem
@@ -1112,6 +1194,12 @@ Avança ou recua o ticket na máquina de estados.
 **Permissão:** `DEAL:CREATE`  
 **Path param:** `ticketId` (UUID)
 
+> **Pré-condição:** o ticket deve estar em `IN_EVALUATION`; caso contrário → **422**
+> (`"O status atual do ticket não permite realizar a operação"`).
+> **Efeito colateral:** ao criar o deal, o ticket transita para `NEGOTIATION` e `currentSector` →
+> `COMMERCIAL`. `totalValue` = Σ(`tableValue` × `quantity`); `discountPct`, `finalValue`,
+> `paymentMethod`, `closedBy`, `closedAt` nascem `null`; `createdBySector` = `EVALUATOR`.
+
 ```json
 // Request
 {
@@ -1183,10 +1271,13 @@ Atualiza lista de procedimentos.
 
 #### GET /api/v1/deals/ticketId/{ticketId}
 
-**Permissão:** `DEAL:READ`  
-**Response:** `200 DealResponseDTO` se existe; **`204 sem corpo`** se não há deal para o ticket.
+**Permissão:** **nenhuma checagem RBAC neste método** (apenas autenticação). Retorna o deal
+**não-arquivado** do ticket (`findByTicketIdAndArchivedFalse`).  
+**Response:** `200 DealResponseDTO` se existe deal ativo; **`204 sem corpo`** se não há deal (ou só há
+deal arquivado) para o ticket.
 
-> O frontend **deve** tratar `204` como "deal ainda não criado" — não é erro.
+> O frontend **deve** tratar `204` como "deal ainda não criado" — não é erro. Deals arquivados pelo
+> RecycleJob não aparecem aqui.
 
 ---
 
@@ -1202,7 +1293,13 @@ Atualiza lista de procedimentos.
 | Validação | Regra |
 |-----------|-------|
 | `@NotNull BigDecimal` | obrigatório |
-| Limite de desconto | definido em `PermissionRule.conditions.maxDiscountPct` — exceder retorna 403 `DiscountApprovalRequiredException` |
+| Faixa | `discountPct` deve estar em **0–100** (inclusive). Fora disso → **422** (`"Percentual não deve ter valores negativos ou superiores a 100"`) |
+| Deal arquivado | se `archived = true` → **422** (`"O status arquivado não permite alterações"`) |
+
+> **Efeito:** grava `discountPct`, calcula `finalValue = totalValue × (1 − discountPct/100)`
+> (`HALF_UP`, 2 casas) e seta `discountApprovedBy` = usuário autenticado. ⚠️ **Não há regra de limite
+> com aprovação implementada** — qualquer usuário com `DEAL:UPDATE` aplica qualquer % dentro de 0–100;
+> a exceção `DiscountApprovalRequiredException` existe mas **nunca é lançada** (ver §15).
 
 **Response 200:** `DealResponseDTO`
 
@@ -1218,7 +1315,18 @@ Fecha o deal.
 { "paymentMethod": "PIX" }
 ```
 
-**Response 200:** `DealResponseDTO` com `closedBy`, `closedAt` preenchidos.
+| Campo | Validação |
+|-------|-----------|
+| `paymentMethod` | `@NotNull PaymentMethod` |
+
+> **Efeitos:** seta `closedBy` = usuário autenticado, `closedAt = now`, `paymentMethod`; e **transita o
+> ticket associado para `WIN`** (`ticket.closedAt = now`). Note que este caminho fecha o ticket
+> **sem** passar pela máquina de estados de `PATCH /tickets/{id}/status` (não checa `TRANSITION_ROLES`),
+> apenas pela permissão `DEAL:CLOSE`.
+> **Erros 422:** deal arquivado (`"O status arquivado não permite alterações"`); deal já fechado
+> (`closedAt != null` → `"Contrato já consta como fechado"`).
+
+**Response 200:** `DealResponseDTO` com `closedBy`, `closedAt`, `paymentMethod` preenchidos.
 
 ---
 
@@ -1356,53 +1464,90 @@ Todos os endpoints requerem `CONFIG:CONFIGURE` (apenas ADM_SYSTEM).
 
 ### Matriz role × resource × action × scope
 
-| Role | Resource | Actions | Scope |
-|------|----------|---------|-------|
-| ADM_SYSTEM | USER | CREATE, READ, UPDATE, DELETE | GLOBAL |
-| ADM_SYSTEM | CUSTOMER | CREATE, READ, UPDATE, DELETE | GLOBAL |
-| ADM_SYSTEM | TICKET | CREATE, UPDATE, READ, RECYCLE | GLOBAL |
-| ADM_SYSTEM | CONTACT_LOG | CREATE, READ | GLOBAL |
-| ADM_SYSTEM | DEAL | CREATE, READ, UPDATE, CLOSE | GLOBAL |
+> **Fonte:** `PermissionSeeder.run()` — esta é a matriz **exata** semeada no primeiro boot (uma regra
+> por linha; `allowed = true`). Difere das versões anteriores deste contrato: agora usa `INTAKE` para
+> os papéis de captação, concede `ANALYTICS:READ` a **todos** os papéis e dá `CUSTOMER:READ` aos
+> avaliadores.
+
+| Role | Resource | Action | Scope |
+|------|----------|--------|-------|
+| ADM_SYSTEM | USER | CREATE / READ / UPDATE / DELETE | GLOBAL |
+| ADM_SYSTEM | CUSTOMER | CREATE / READ / UPDATE / DELETE | GLOBAL |
+| ADM_SYSTEM | TICKET | CREATE / UPDATE / READ / RECYCLE | GLOBAL |
+| ADM_SYSTEM | CONTACT_LOG | CREATE / READ | GLOBAL |
+| ADM_SYSTEM | DEAL | CREATE / READ / UPDATE / CLOSE | GLOBAL |
 | ADM_SYSTEM | ANALYTICS | READ | GLOBAL |
 | ADM_SYSTEM | CONFIG | CONFIGURE | GLOBAL |
-| ADM_LEADS | CUSTOMER | CREATE, READ, UPDATE | SECTOR |
-| ADM_LEADS | TICKET | CREATE, READ, UPDATE | SECTOR |
-| ADM_LEADS | CONTACT_LOG | CREATE, READ | SECTOR |
-| USER_LEADS | CUSTOMER | CREATE, READ, UPDATE | OWN |
-| USER_LEADS | TICKET | CREATE, READ, UPDATE | OWN |
-| USER_LEADS | CONTACT_LOG | CREATE, READ | OWN |
-| USER_ATTENDANT | CUSTOMER | CREATE, READ, UPDATE | OWN |
-| USER_ATTENDANT | TICKET | READ, UPDATE | OWN |
-| USER_ATTENDANT | CONTACT_LOG | CREATE, READ | OWN |
+| ADM_LEADS | CUSTOMER | CREATE | SECTOR |
+| ADM_LEADS | CUSTOMER | READ / UPDATE | INTAKE |
+| ADM_LEADS | TICKET | CREATE | SECTOR |
+| ADM_LEADS | TICKET | READ / UPDATE | INTAKE |
+| ADM_LEADS | CONTACT_LOG | CREATE | SECTOR |
+| ADM_LEADS | CONTACT_LOG | READ | INTAKE |
+| ADM_LEADS | ANALYTICS | READ | SECTOR |
+| USER_LEADS | CUSTOMER | CREATE / UPDATE | OWN |
+| USER_LEADS | CUSTOMER | READ | INTAKE |
+| USER_LEADS | TICKET | CREATE | OWN |
+| USER_LEADS | TICKET | READ | INTAKE |
+| USER_LEADS | TICKET | UPDATE | SECTOR |
+| USER_LEADS | CONTACT_LOG | CREATE | OWN |
+| USER_LEADS | CONTACT_LOG | READ | SECTOR |
+| USER_LEADS | ANALYTICS | READ | OWN |
+| USER_ATTENDANT | CUSTOMER | CREATE | OWN |
+| USER_ATTENDANT | CUSTOMER | READ / UPDATE | INTAKE |
+| USER_ATTENDANT | TICKET | READ / UPDATE | INTAKE |
+| USER_ATTENDANT | CONTACT_LOG | CREATE | OWN |
+| USER_ATTENDANT | CONTACT_LOG | READ | INTAKE |
 | USER_ATTENDANT | ANALYTICS | READ | OWN |
-| ADM_EVALUATOR | DEAL | CREATE, READ, UPDATE | SECTOR |
-| ADM_EVALUATOR | TICKET | READ, UPDATE | SECTOR |
-| ADM_EVALUATOR | CONTACT_LOG | READ | SECTOR |
-| USER_EVALUATOR | DEAL | CREATE, READ, UPDATE | OWN |
-| USER_EVALUATOR | TICKET | READ, UPDATE | OWN |
+| ADM_EVALUATOR | CUSTOMER | READ | SECTOR |
+| ADM_EVALUATOR | DEAL | CREATE / READ / UPDATE | SECTOR |
+| ADM_EVALUATOR | TICKET | READ / UPDATE | SECTOR |
+| ADM_EVALUATOR | CONTACT_LOG | READ | GLOBAL |
+| ADM_EVALUATOR | ANALYTICS | READ | SECTOR |
+| USER_EVALUATOR | CUSTOMER | READ | GLOBAL |
+| USER_EVALUATOR | DEAL | CREATE / READ / UPDATE | OWN |
+| USER_EVALUATOR | TICKET | READ / UPDATE | SECTOR |
 | USER_EVALUATOR | CONTACT_LOG | READ | GLOBAL |
-| ADM_COMMERCIAL | DEAL | READ, UPDATE, CLOSE | SECTOR |
-| ADM_COMMERCIAL | TICKET | READ, UPDATE, CLOSE | SECTOR |
+| USER_EVALUATOR | ANALYTICS | READ | OWN |
+| ADM_COMMERCIAL | DEAL | READ / UPDATE / CLOSE | SECTOR |
+| ADM_COMMERCIAL | TICKET | READ / UPDATE / CLOSE | SECTOR |
 | ADM_COMMERCIAL | CUSTOMER | READ | SECTOR |
 | ADM_COMMERCIAL | CONTACT_LOG | READ | SECTOR |
-| USER_COMMERCIAL | DEAL | READ, CLOSE | OWN |
+| ADM_COMMERCIAL | ANALYTICS | READ | SECTOR |
+| USER_COMMERCIAL | DEAL | READ | OWN |
 | USER_COMMERCIAL | DEAL | UPDATE | SECTOR |
-| USER_COMMERCIAL | TICKET | READ, UPDATE, CLOSE | OWN |
+| USER_COMMERCIAL | DEAL | CLOSE | OWN |
+| USER_COMMERCIAL | TICKET | READ / UPDATE / CLOSE | OWN |
 | USER_COMMERCIAL | CUSTOMER | READ | SECTOR |
 | USER_COMMERCIAL | CONTACT_LOG | READ | GLOBAL |
+| USER_COMMERCIAL | ANALYTICS | READ | OWN |
 
-### Lógica de resolveScope
+> **Notas:**
+> - **`TICKET:CLOSE`** é semeado para os papéis COMMERCIAL, mas **nenhum endpoint o consome** (o fecho
+>   do deal usa `DEAL:CLOSE`; a mudança de status usa `TICKET:UPDATE`). É efetivamente inerte hoje.
+> - **`USER:*`** existe só para `ADM_SYSTEM`. Nenhum outro papel cria/lista/atualiza/deleta usuários.
+> - **`CONFIG:CONFIGURE`** existe só para `ADM_SYSTEM` → todo o módulo `/config` é exclusivo do admin.
+
+### Lógica de resolveScope (`PermissionService`)
 
 ```
 canAccess(user, resource, action, targetSector, targetOwnerId):
-  1. Busca regra: role + sector + resource + action
-  2. Fallback:    role + resource + action (sem sector)
-  3. Se nenhuma regra encontrada ou allowed=false → NEGA
-  4. Aplica scope:
+  1. getScope: busca regra (role + sector + resource + action)
+  2. Fallback: regra (role + resource + action) sem sector
+  3. Se nenhuma regra ou allowed=false → Optional.empty() → NEGA (403)
+  4. resolveScope(scope):
      GLOBAL → sempre PERMITE
      SECTOR → PERMITE se user.sector == targetSector
      OWN    → PERMITE se user.id == targetOwnerId
+     INTAKE → PERMITE se user.sector ∈ {LEADS, ATTENDANT} E targetSector ∈ {LEADS, ATTENDANT}
 ```
+
+> ⚠️ **Consequência prática do `targetSector`/`targetOwnerId`:** em operações de recurso único, o
+> backend passa o setor/dono do **recurso alvo** (ex.: `ticket.currentSector`, `customer.createdBy`).
+> Por isso, p.ex., um `ADM_LEADS` (escopo `INTAKE` em `TICKET:UPDATE`) só consegue atualizar tickets
+> cujo `currentSector` ainda seja `LEADS` ou `ATTENDANT`; assim que o ticket vai para `EVALUATOR`/
+> `COMMERCIAL`, ele perde o acesso. Já um `USER_LEADS` tem `TICKET:UPDATE` em escopo `SECTOR`, então
+> só atualiza tickets com `currentSector == LEADS`.
 
 ### Orientação para o frontend
 
@@ -1431,52 +1576,77 @@ canAccess(user, resource, action, targetSector, targetOwnerId):
 
 ---
 
-### ADM_LEADS / USER_LEADS
+### ADM_LEADS
 
-- **Cria:** clientes, tickets, logs de contato
-- **Edita:** clientes, tickets
-- **Não acessa:** deals, config, analytics global
-- **Telas visíveis:** Clientes, Tickets, Logs de Contato
-- **Rota inicial:** `/clientes`
-- **Analytics:** nenhum (USER_LEADS não tem permissão)
+- **Cria:** clientes, tickets (escopo `SECTOR`), logs de contato
+- **Lê/edita:** clientes e tickets em escopo **`INTAKE`** (recursos cujo ticket está em `LEADS` ou `ATTENDANT`)
+- **Lê:** contact_log (`INTAKE`)
+- **Não acessa:** deals, config, USER
+- **Analytics:** `ANALYTICS:READ:SECTOR` — acessa `/conversion` e `/dropoff` filtrados ao próprio setor (ADR-015); `/dashboard` continua restrito a GLOBAL (§13)
+- **Rota inicial sugerida:** `/clientes`
 
-> ADM_LEADS: scope SECTOR. USER_LEADS: scope OWN (vê apenas o que criou).
+### USER_LEADS
+
+- **Cria:** clientes/tickets (`OWN`), logs de contato (`OWN`)
+- **Lê:** clientes/tickets em `INTAKE`; **atualiza** tickets em escopo `SECTOR` (só `currentSector==LEADS`)
+- **Lê:** contact_log (`SECTOR`)
+- **Analytics:** `ANALYTICS:READ:OWN` — acessa `/user-performance/{próprio-id}` (§13)
+- **Rota inicial sugerida:** `/clientes`
 
 ---
 
 ### USER_ATTENDANT
 
-- **Cria:** clientes, logs de contato
-- **Lê/atualiza:** tickets (OWN), clientes (OWN)
-- **Não pode:** criar ticket, transição LOSS, transição IN_CONTACT
-- **Analytics:** OWN — apenas métricas pessoais
-- **Telas visíveis:** Agenda/Atendimentos, próprios clientes, próprio desempenho
-- **Rota inicial:** `/atendimentos`
+- **Cria:** clientes (`OWN`), logs de contato (`OWN`)
+- **Lê/atualiza:** clientes e tickets em escopo **`INTAKE`** (`LEADS`/`ATTENDANT`)
+- **Não pode:** criar ticket; transição **LOSS** e transição **IN_CONTACT** (bloqueio explícito → 403)
+- **Analytics:** `ANALYTICS:READ:OWN` — acessa `/user-performance/{próprio-id}` (§13)
+- **Rota inicial sugerida:** `/atendimentos`
 
 ---
 
-### ADM_EVALUATOR / USER_EVALUATOR
+### ADM_EVALUATOR
 
-- **Cria:** deals
-- **Edita:** deals, tickets
-- **Lê:** contact_log (GLOBAL para USER_EVALUATOR — lê histórico de captação)
-- **Telas visíveis:** Avaliações, Deals
-- **Rota inicial:** `/avaliacoes`
+- **Cria/edita:** deals (`SECTOR`); edita tickets (`SECTOR`)
+- **Lê:** clientes (`SECTOR`), contact_log (`GLOBAL` — histórico de captação completo)
+- **Analytics:** `SECTOR` — acessa `/conversion` e `/dropoff` filtrados ao próprio setor (ADR-015); `/dashboard` restrito a GLOBAL (§13)
+- **Rota inicial sugerida:** `/avaliacoes`
+
+### USER_EVALUATOR
+
+- **Cria/edita:** deals (`OWN`)
+- **Edita/lê:** tickets (`SECTOR`)
+- **Lê:** clientes (`GLOBAL`), contact_log (`GLOBAL`)
+- **Analytics:** `OWN` — acessa `/user-performance/{próprio-id}` (§13)
+- **Rota inicial sugerida:** `/avaliacoes`
 
 ---
 
-### ADM_COMMERCIAL / USER_COMMERCIAL
+### ADM_COMMERCIAL
 
-- **Edita:** deals (update, close)
-- **Lê:** deals, tickets, clientes do setor (SECTOR); contact_log (GLOBAL para USER_COMMERCIAL, SECTOR para ADM_COMMERCIAL)
+- **Edita/fecha:** deals (`SECTOR`)
+- **Lê/edita:** tickets (`SECTOR`); lê clientes (`SECTOR`), contact_log (`SECTOR`)
+- **Não cria:** deals, tickets, usuários
+- **Analytics:** `SECTOR` — acessa `/conversion` e `/dropoff` filtrados ao próprio setor (ADR-015); `/dashboard` restrito a GLOBAL (§13)
+- **Rota inicial sugerida:** `/negociacoes`
+
+### USER_COMMERCIAL
+
+- **Lê/fecha:** deals (`OWN`); **atualiza** deals em escopo **`SECTOR`** (pode editar deal criado por
+  outro membro do setor, mas só lê/fecha os próprios)
+- **Lê/edita:** tickets (`OWN`); lê clientes (`SECTOR`), contact_log (`GLOBAL`)
 - **Não cria:** deals, tickets
-- **Telas visíveis:** Negociações, Deals, Clientes (somente leitura do setor)
-- **Rota inicial:** `/negociacoes`
-- **Atenção:** `DEAL:UPDATE` de `USER_COMMERCIAL` tem scope `SECTOR` (pode atualizar deals do setor); `DEAL:READ` e `DEAL:CLOSE` têm scope `OWN`
+- **Analytics:** `OWN` — acessa `/user-performance/{próprio-id}` (§13)
+- **Rota inicial sugerida:** `/negociacoes`
 
 ---
 
-> **Regra de ouro:** `USER_ATTENDANT` tem `ANALYTICS:READ:OWN` — apenas suas próprias métricas pessoais. Não acessa o dashboard global nem métricas de outros usuários.
+> **Regra de ouro (revisada 1.4 — ADR-015):** **todos** os papéis têm `ANALYTICS:READ` semeado.
+> Com a ADR-015 o scope é resolvido uma vez no entry point de cada método:
+> `GLOBAL` acessa `/dashboard` (dados completos); `SECTOR` acessa `/conversion` e `/dropoff` filtrados
+> ao próprio setor; `OWN` acessa `/user-performance/{próprio-id}` (qualquer outro `targetUserId` → 403).
+> Endpoints `/ads-roi`, `/bonus/{id}` e `/post-procedure` foram removidos — dados disponíveis apenas
+> dentro de `/dashboard`. Detalhe em §13.
 
 ---
 
@@ -1560,9 +1730,12 @@ Apenas algumas transições têm restrição de papel específica:
   3. Se `days >= config.afterDays`:
      - Arquiva o deal ativo do ticket (`archived = true`)
      - Define `ticket.status = RECYCLED` e `ticket.recycledAt = now`
-     - Cria novo `LeadTicket(status=NEW, customerId=mesmo, previousTicketId=ticket.id)`
+     - Cria novo `LeadTicket(status=NEW, customerId=mesmo, currentSector=LEADS,
+       createdBy=ticket.createdBy, previousTicketId=ticket.id)`
 
-> O novo ticket filho criado pelo RecycleJob **não** tem `currentSector` nem `createdBy` definidos (são null no código atual) — LACUNA a ser observada.
+> ✅ O ticket-filho criado pelo RecycleJob **agora tem** `currentSector = LEADS` e `createdBy` herdado
+> do ticket original (a LACUNA documentada em versões anteriores está resolvida). `assignedTo` do filho
+> nasce `null`.
 
 ### Cadeia de tickets via previousTicketId
 
@@ -1620,36 +1793,44 @@ Toda transição de status gera automaticamente um `ContactLog` com `channel = O
 
 ### Analytics
 
-Todos os endpoints analytics recebem `DataRangeDTO` como `@ModelAttribute` (query params):
+A maioria dos endpoints analytics recebe `DataRangeDTO` como `@ModelAttribute` (query params):
 
 | Param | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
 | `from` | `LocalDate` (`YYYY-MM-DD`) | sim | Início do período |
 | `to` | `LocalDate` (`YYYY-MM-DD`) | sim | Fim do período |
 
----
+> Os campos do `DataRangeDTO` são literalmente **`from`** e **`to`**. (`bonus/{id}` não usa período —
+> usa `periodRef`.)
 
-#### GET /api/v1/analytics/ads-roi
+#### ⚠️ Acesso efetivo aos endpoints de analytics (importante)
 
-**Params:** `channel` (AdsChannel, obrigatório) + `from/to`
+Todos os papéis têm `ANALYTICS:READ` semeado, **mas** o backend chama `checkOrThrow` de formas
+diferentes por endpoint, e o `resolveScope` compara contra `targetSector`/`targetOwnerId`:
 
-```json
-// Response 200
-{
-  "channel": "INSTAGRAM",
-  "totalInvestment": 3500.00,
-  "totalRevenue": 15000.00,
-  "roiMultiplier": 4.28,
-  "leadsCount": 45,
-  "closedCount": 12
-}
-```
+| Endpoint | Scope aceito | Quem acessa | Comportamento por scope |
+|----------|--------------|-------------|------------------------|
+| `GET /analytics/dashboard` | GLOBAL only | `ADM_SYSTEM` | Escopo não-GLOBAL → **403** |
+| `GET /analytics/conversion` | GLOBAL + SECTOR | `ADM_SYSTEM`, `ADM_LEADS`, `ADM_EVALUATOR`, `ADM_COMMERCIAL` | GLOBAL: sem filtro; SECTOR: `effectiveSector = user.getSector()`, ignora o `sector` do query param |
+| `GET /analytics/dropoff` | GLOBAL + SECTOR | `ADM_SYSTEM`, `ADM_LEADS`, `ADM_EVALUATOR`, `ADM_COMMERCIAL` | GLOBAL: retorna os 3 setores; SECTOR: retorna apenas o setor do usuário |
+| `GET /analytics/user-performance/{targetUserId}` | GLOBAL + OWN | `ADM_SYSTEM`, `USER_LEADS`, `USER_ATTENDANT`, `USER_EVALUATOR`, `USER_COMMERCIAL` | OWN: `targetUserId` deve ser o próprio `user.id` (caso contrário → **403**); GLOBAL: qualquer `targetUserId`. Papéis SECTOR → **403** |
+
+> **ADR-015 (2026-06-14):** a implementação anterior passava `(null, null)` ao `checkOrThrow` em todos
+> os métodos de analytics, bloqueando qualquer papel não-GLOBAL. Com a ADR-015, o scope é resolvido via
+> `getScope()` no entry point de cada método e a visibilidade é aplicada nos dados (não apenas no check).
+> Endpoints `/ads-roi`, `/bonus/{id}` e `/post-procedure` foram removidos do contrato público — seus
+> dados ficam dentro de `GET /analytics/dashboard` (GLOBAL apenas).
 
 ---
 
 #### GET /api/v1/analytics/conversion
 
-**Params:** `sector` (Sector, obrigatório) + `from/to`
+**Params:** `sector` (Sector) + `from/to`
+
+> ⚠️ **Comportamento por scope (ADR-015):** o parâmetro `sector` é relevante apenas para escopo
+> `GLOBAL`. Com escopo `SECTOR`, o backend ignora o `sector` recebido e usa `user.getSector()`
+> como `effectiveSector` — enviar `sector=EVALUATOR` com um `ADM_LEADS` retorna dados de `LEADS`.
+> O campo `sector` na response reflete o `effectiveSector` aplicado.
 
 ```json
 // Response 200
@@ -1671,6 +1852,10 @@ Todos os endpoints analytics recebem `DataRangeDTO` como `@ModelAttribute` (quer
 
 **Params:** `from/to` apenas
 
+> ⚠️ **Comportamento por scope (ADR-015):** com escopo `GLOBAL` retorna os 3 setores (`LEADS`,
+> `EVALUATOR`, `COMMERCIAL`). Com escopo `SECTOR`, retorna apenas o DTO do setor do usuário (array
+> com 1 elemento).
+
 ```json
 // Response 200 — List<SectorDropOffResultDTO>
 [
@@ -1691,6 +1876,10 @@ Todos os endpoints analytics recebem `DataRangeDTO` como `@ModelAttribute` (quer
 **Path param:** `targetUserId` (UUID)  
 **Params:** `from/to`
 
+> ⚠️ **Guarda OWN (ADR-015):** papéis com escopo `OWN` só podem consultar o próprio `targetUserId`.
+> Enviar o UUID de outro usuário → **403**. Papéis com escopo `GLOBAL` (`ADM_SYSTEM`) podem consultar
+> qualquer usuário. Papéis com escopo `SECTOR` → **403** (não têm acesso a este endpoint).
+
 ```json
 // Response 200
 {
@@ -1710,37 +1899,9 @@ Todos os endpoints analytics recebem `DataRangeDTO` como `@ModelAttribute` (quer
 
 ---
 
-#### GET /api/v1/analytics/bonus/{id}
-
-**Path param:** `id` (UUID do usuário)  
-**Query param:** `periodRef` (string, ex: "2026-06")
-
-```json
-// Response 200
-{ "value": 850.00 }
-```
-
----
-
-#### GET /api/v1/analytics/post-procedure
-
-**Params:** `from/to`
-
-```json
-// Response 200
-{
-  "totalPostProcedure": 50,
-  "returnedCount": 35,
-  "lostCount": 10,
-  "returnRate": 70.00,
-  "pendingCount": 5
-}
-```
-
----
-
 #### GET /api/v1/analytics/dashboard
 
+**Permissão:** GLOBAL only — apenas `ADM_SYSTEM`  
 **Params:** `from/to`
 
 ```json
@@ -1751,9 +1912,14 @@ Todos os endpoints analytics recebem `DataRangeDTO` como `@ModelAttribute` (quer
   "stageConversion": { /* StageConversionResultDTO */ },
   "sectorDropOff": [ /* List<SectorDropOffResultDTO> */ ],
   "topPerformers": [ /* List<UserPerformanceResultDTO> */ ],
+  "postProcedures": { /* PostProcedureResultDTO */ },
   "totalExpectedCash": 125000.00
 }
 ```
+
+> `postProcedures` contém as métricas pós-procedimento do período (`totalPostProcedure`,
+> `returnedCount`, `lostCount`, `returnRate`, `pendingCount`). Antes disponível como endpoint
+> independente `/post-procedure` — removido na v1.4 (ADR-015).
 
 ---
 
@@ -1918,14 +2084,13 @@ export interface JwtPayload {
 export interface UserCreateRequest {
   name: string;
   username: string;
-  passwordHash: string; // senha em texto plano — backend faz hash
+  password: string; // CAMPO = "password" (não passwordHash); texto plano — backend faz hash
   sector: Sector;
   role: Role;
 }
 
+// PATCH /users/{username}/newPassword — body contém APENAS newPassword
 export interface UserPasswordUpdateRequest {
-  username: string;
-  oldPassword: string;
   newPassword: string;
 }
 
@@ -1949,7 +2114,7 @@ export interface CustomerCreateRequest {
   email?: string | null;
   initialNote?: string | null;
   source: CustomerSource;
-  adChannel?: AdsChannel | null;
+  adsChannel?: AdsChannel | null; // CAMPO = "adsChannel" (não adChannel)
   adCampaign?: string | null;
   referredBy?: string | null; // UUID
   channel?: ContactChannel | null;
@@ -1973,7 +2138,7 @@ export interface CustomerResponse {
   email: string | null;
   initialNote: string | null;
   source: CustomerSource;
-  adChannel: AdsChannel | null;
+  adsChannel: AdsChannel | null; // CAMPO = "adsChannel" (não adChannel)
   adCampaign: string | null;
   createdAt: string; // LocalDateTime
   updatedAt: string;
@@ -2217,6 +2382,7 @@ export interface GlobalDashboardResult {
   stageConversion: StageConversionResult;
   sectorDropOff: SectorDropOffResult[];
   topPerformers: UserPerformanceResult[];
+  postProcedures: PostProcedureResult; // adicionado v1.4 — ADR-015
   totalExpectedCash: number;
 }
 
@@ -2224,60 +2390,75 @@ export interface GlobalDashboardResult {
 // RBAC — mapa consultável
 // =============================================================
 
+export type Scope = 'GLOBAL' | 'SECTOR' | 'OWN' | 'INTAKE';
 export type ResourceAction = string; // "RESOURCE:ACTION"
 
-export const ROLE_CAPABILITIES: Record<Role, ResourceAction[]> = {
-  ADM_SYSTEM: [
-    'USER:CREATE','USER:READ','USER:UPDATE','USER:DELETE',
-    'CUSTOMER:CREATE','CUSTOMER:READ','CUSTOMER:UPDATE','CUSTOMER:DELETE',
-    'TICKET:CREATE','TICKET:UPDATE','TICKET:READ','TICKET:RECYCLE',
-    'CONTACT_LOG:CREATE','CONTACT_LOG:READ',
-    'DEAL:CREATE','DEAL:READ','DEAL:UPDATE','DEAL:CLOSE',
-    'ANALYTICS:READ',
-    'CONFIG:CONFIGURE',
-  ],
-  ADM_LEADS: [
-    'CUSTOMER:CREATE','CUSTOMER:READ','CUSTOMER:UPDATE',
-    'TICKET:CREATE','TICKET:READ','TICKET:UPDATE',
-    'CONTACT_LOG:CREATE','CONTACT_LOG:READ',
-  ],
-  USER_LEADS: [
-    'CUSTOMER:CREATE','CUSTOMER:READ','CUSTOMER:UPDATE',
-    'TICKET:CREATE','TICKET:READ','TICKET:UPDATE',
-    'CONTACT_LOG:CREATE','CONTACT_LOG:READ',
-  ],
-  USER_ATTENDANT: [
-    'CUSTOMER:CREATE','CUSTOMER:READ','CUSTOMER:UPDATE',
-    'TICKET:READ','TICKET:UPDATE',
-    'CONTACT_LOG:CREATE','CONTACT_LOG:READ',
-    'ANALYTICS:READ',
-  ],
-  ADM_EVALUATOR: [
-    'DEAL:CREATE','DEAL:READ','DEAL:UPDATE',
-    'TICKET:READ','TICKET:UPDATE',
-    'CONTACT_LOG:READ',
-  ],
-  USER_EVALUATOR: [
-    'DEAL:CREATE','DEAL:READ','DEAL:UPDATE',
-    'TICKET:READ','TICKET:UPDATE',
-    'CONTACT_LOG:READ',
-  ],
-  ADM_COMMERCIAL: [
-    'DEAL:READ','DEAL:UPDATE','DEAL:CLOSE',
-    'TICKET:READ','TICKET:UPDATE','TICKET:CLOSE',
-    'CUSTOMER:READ',
-    'CONTACT_LOG:READ',
-  ],
-  USER_COMMERCIAL: [
-    'DEAL:READ','DEAL:UPDATE','DEAL:CLOSE',
-    'TICKET:READ','TICKET:UPDATE','TICKET:CLOSE',
-    'CUSTOMER:READ',
-    'CONTACT_LOG:READ',
-  ],
+// Espelha PermissionSeeder. Valor = escopo concedido àquela tupla (resource:action).
+// Use para esconder UI por CAPACIDADE; o backend é a fonte de verdade (403 = rede de segurança).
+export const ROLE_CAPABILITIES: Record<Role, Record<ResourceAction, Scope>> = {
+  ADM_SYSTEM: {
+    'USER:CREATE': 'GLOBAL', 'USER:READ': 'GLOBAL', 'USER:UPDATE': 'GLOBAL', 'USER:DELETE': 'GLOBAL',
+    'CUSTOMER:CREATE': 'GLOBAL', 'CUSTOMER:READ': 'GLOBAL', 'CUSTOMER:UPDATE': 'GLOBAL', 'CUSTOMER:DELETE': 'GLOBAL',
+    'TICKET:CREATE': 'GLOBAL', 'TICKET:UPDATE': 'GLOBAL', 'TICKET:READ': 'GLOBAL', 'TICKET:RECYCLE': 'GLOBAL',
+    'CONTACT_LOG:CREATE': 'GLOBAL', 'CONTACT_LOG:READ': 'GLOBAL',
+    'DEAL:CREATE': 'GLOBAL', 'DEAL:READ': 'GLOBAL', 'DEAL:UPDATE': 'GLOBAL', 'DEAL:CLOSE': 'GLOBAL',
+    'ANALYTICS:READ': 'GLOBAL',
+    'CONFIG:CONFIGURE': 'GLOBAL',
+  },
+  ADM_LEADS: {
+    'CUSTOMER:CREATE': 'SECTOR', 'CUSTOMER:READ': 'INTAKE', 'CUSTOMER:UPDATE': 'INTAKE',
+    'TICKET:CREATE': 'SECTOR', 'TICKET:READ': 'INTAKE', 'TICKET:UPDATE': 'INTAKE',
+    'CONTACT_LOG:CREATE': 'SECTOR', 'CONTACT_LOG:READ': 'INTAKE',
+    'ANALYTICS:READ': 'SECTOR',
+  },
+  USER_LEADS: {
+    'CUSTOMER:CREATE': 'OWN', 'CUSTOMER:READ': 'INTAKE', 'CUSTOMER:UPDATE': 'OWN',
+    'TICKET:CREATE': 'OWN', 'TICKET:READ': 'INTAKE', 'TICKET:UPDATE': 'SECTOR',
+    'CONTACT_LOG:CREATE': 'OWN', 'CONTACT_LOG:READ': 'SECTOR',
+    'ANALYTICS:READ': 'OWN',
+  },
+  USER_ATTENDANT: {
+    'CUSTOMER:CREATE': 'OWN', 'CUSTOMER:READ': 'INTAKE', 'CUSTOMER:UPDATE': 'INTAKE',
+    'TICKET:READ': 'INTAKE', 'TICKET:UPDATE': 'INTAKE',
+    'CONTACT_LOG:CREATE': 'OWN', 'CONTACT_LOG:READ': 'INTAKE',
+    'ANALYTICS:READ': 'OWN',
+  },
+  ADM_EVALUATOR: {
+    'CUSTOMER:READ': 'SECTOR',
+    'DEAL:CREATE': 'SECTOR', 'DEAL:READ': 'SECTOR', 'DEAL:UPDATE': 'SECTOR',
+    'TICKET:READ': 'SECTOR', 'TICKET:UPDATE': 'SECTOR',
+    'CONTACT_LOG:READ': 'GLOBAL',
+    'ANALYTICS:READ': 'SECTOR',
+  },
+  USER_EVALUATOR: {
+    'CUSTOMER:READ': 'GLOBAL',
+    'DEAL:CREATE': 'OWN', 'DEAL:READ': 'OWN', 'DEAL:UPDATE': 'OWN',
+    'TICKET:READ': 'SECTOR', 'TICKET:UPDATE': 'SECTOR',
+    'CONTACT_LOG:READ': 'GLOBAL',
+    'ANALYTICS:READ': 'OWN',
+  },
+  ADM_COMMERCIAL: {
+    'DEAL:READ': 'SECTOR', 'DEAL:UPDATE': 'SECTOR', 'DEAL:CLOSE': 'SECTOR',
+    'TICKET:READ': 'SECTOR', 'TICKET:UPDATE': 'SECTOR', 'TICKET:CLOSE': 'SECTOR',
+    'CUSTOMER:READ': 'SECTOR',
+    'CONTACT_LOG:READ': 'SECTOR',
+    'ANALYTICS:READ': 'SECTOR',
+  },
+  USER_COMMERCIAL: {
+    'DEAL:READ': 'OWN', 'DEAL:UPDATE': 'SECTOR', 'DEAL:CLOSE': 'OWN',
+    'TICKET:READ': 'OWN', 'TICKET:UPDATE': 'OWN', 'TICKET:CLOSE': 'OWN',
+    'CUSTOMER:READ': 'SECTOR',
+    'CONTACT_LOG:READ': 'GLOBAL',
+    'ANALYTICS:READ': 'OWN',
+  },
 };
 
 export function canDo(role: Role, resource: string, action: string): boolean {
-  return ROLE_CAPABILITIES[role]?.includes(`${resource}:${action}`) ?? false;
+  return ROLE_CAPABILITIES[role]?.[`${resource}:${action}`] !== undefined;
+}
+
+export function scopeOf(role: Role, resource: string, action: string): Scope | undefined {
+  return ROLE_CAPABILITIES[role]?.[`${resource}:${action}`];
 }
 
 // =============================================================
@@ -2380,6 +2561,48 @@ As divergências abaixo foram identificadas na revisão do contrato e **já corr
 | B3 (A3) | `PermissionSeeder` | `USER_COMMERCIAL, DEAL:UPDATE` com scope `OWN` → vendedor não conseguia atualizar deals criados por outros membros do setor | Scope corrigido para `SECTOR` |
 | B4 (A4) | `AnalyticsServiceImpl.getUserPerformance()` | `checkOrThrow(... null, null)` — scope `OWN` checava `user.id == null` → sempre falso → `USER_ATTENDANT` recebia 403 ao consultar sua própria performance | Corrigido para `checkOrThrow(... null, userId)` |
 | B5 (M4) | `CustomerServiceImpl.update()` | `phone2` não era persistido no `PATCH /customers/{id}` | `customer.setPhone2(dto.phone2())` adicionado |
+
+---
+
+### Sincronização 1.3 (2026-06-11) — divergências entre o contrato 1.2 e o código atual
+
+Esta tabela lista o que **mudou em relação ao texto anterior** deste contrato; o código é a verdade.
+
+| # | Local | Contrato dizia (≤1.2) | Código real (HEAD) | Ação do frontend |
+|---|-------|-----------------------|--------------------|------------------|
+| D1 | `UserCreateRequestDTO` | campo `passwordHash` | campo **`password`** | Enviar `password` |
+| D2 | `UserPasswordUpdateRequestDTO` | `{username, oldPassword, newPassword}` | **só `{newPassword}`**; sem verificação de senha antiga | Enviar só `newPassword` |
+| D3 | `PATCH /users/{username}/newPassword` | "autenticado" | exige **`USER:UPDATE`** (só ADM_SYSTEM); nova senha == atual → **422** | Restringir tela a admin |
+| D4 | Customer `adChannel` | campo `adChannel` (request, response, query) | **`adsChannel`** em todos | Renomear para `adsChannel` |
+| D5 | `GET /customers?name=` | "contains, case-insensitive" | **igualdade exata** | Não esperar busca parcial |
+| D6 | RBAC §8/§9 | matriz SECTOR/OWN, analytics só p/ admin e attendant | matriz com **INTAKE** e **`ANALYTICS:READ` p/ todos**; `CUSTOMER:READ` p/ avaliadores | Usar matriz nova |
+| D7 | Login inválido | "401 sem corpo" | **401 com corpo JSON** (`BadCredentialsException`) | Ler `message` do erro |
+| D8 | `/authentication/refresh` token adulterado | "401 sem corpo" | **500** (sem handler de `JwtException`) | Tratar ≠200 como sessão perdida |
+| D9 | `GET /users/{id}` e `/username/{username}` | `USER:READ` | **sem checagem RBAC** (qualquer autenticado) | Pode chamar pós-login |
+| D10 | Analytics dashboards | "ADMIN/MANAGER" | efetivamente **só ADM_SYSTEM**; `user-performance` também p/ papéis OWN (§13) | Esconder dashboard p/ não-admin |
+| D11 | 422 reason phrase | "Unprocessable Entity" | **"Unprocessable Content"** | Não comparar string literal |
+| D12 | 500 message | "Erro interno do servidor" | **"Erro Interno do Servidor"** (maiúsculas) | — |
+| D13 | `POST /deals/{ticketId}` | sem pré-condição | exige ticket em **`IN_EVALUATION`** (422 senão); move ticket → NEGOTIATION/COMMERCIAL | Habilitar criar deal só em IN_EVALUATION |
+| D14 | `PATCH /deals/{id}/discount` | limite via `maxDiscountPct` → 403 | só valida **0–100** (422); sem aprovação; `discountApprovedBy` = quem aplicou | Validar 0–100 no front |
+| D15 | RecycleJob ticket-filho | "sem currentSector/createdBy" | **resolvido**: `currentSector=LEADS`, `createdBy` herdado | — |
+
+> **Nota de topologia (não afeta o frontend):** apesar de a documentação interna citar dois bancos
+> (`identity_db`/`crm_db`), o `application.properties` configura **um único datasource**
+> (`odontocoredb`) com `ddl-auto=update`. As entidades não usam `schema` explícito. Sem impacto na API.
+
+---
+
+### ADR-015 — Analytics scope-aware (2026-06-14)
+
+| # | Local | Situação anterior | Situação atual | Ação do frontend |
+|---|-------|-------------------|----------------|-----------------|
+| E1 | `GET /analytics/ads-roi` | Endpoint público (GLOBAL only na prática) | **Removido** — dados disponíveis em `GET /analytics/dashboard` | Remover chamadas a `/ads-roi`; ler `adsRoi` do dashboard |
+| E2 | `GET /analytics/bonus/{id}` | Endpoint público (GLOBAL only na prática) | **Removido** — bônus disponível em `getUserPerformance.calculatedBonus` | Remover chamadas a `/bonus/{id}` |
+| E3 | `GET /analytics/post-procedure` | Endpoint público (GLOBAL only na prática) | **Removido** — dados disponíveis em `GET /analytics/dashboard` | Remover chamadas a `/post-procedure`; ler `postProcedures` do dashboard |
+| E4 | `GET /analytics/dashboard` response | Não incluía métricas pós-procedimento | Inclui `postProcedures: PostProcedureResultDTO` (campo novo) | Adicionar `postProcedures` ao type `GlobalDashboardResult` |
+| E5 | `GET /analytics/conversion` | Retornava 403 para escopo SECTOR | SECTOR usa `effectiveSector = user.getSector()`; parâmetro `sector` do query é **ignorado** para escopo SECTOR | ADMs de setor recebem dados do próprio setor sem precisar enviar `sector` |
+| E6 | `GET /analytics/dropoff` | Retornava 403 para escopo SECTOR | SECTOR retorna array com 1 elemento (setor do usuário) em vez dos 3 setores | Tratar response como array de 1 a 3 elementos conforme o papel |
+| E7 | `GET /analytics/user-performance/{targetUserId}` | Escopo OWN checava `callerId` — sempre passava; qualquer `targetUserId` era aceito | OWN: `targetUserId != user.id` → **403** | Papéis OWN devem passar sempre o próprio UUID no path |
 
 ---
 

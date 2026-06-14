@@ -67,11 +67,14 @@ enum CustomerSource { ADS_PAID, ORGANIC, INDICATION }
 
 > **⚠ FONTE DA VERDADE:** o contrato oficial de integração está em
 > `B:\projects\odontocore.crm.frontend\frontend-integration-contract.md`
-> (v1.2, 2026-06-08). Ele descreve endpoints, DTOs, enums, modelo de erro, RBAC,
+> (v1.4, 2026-06-14 — sincronizado com `B:\projects\odontocore.crm\odontocore.crm\.claude\specs\frontend-integration-contract.md`,
+> commit backend `949a4a9`). Ele descreve endpoints, DTOs, enums, modelo de erro, RBAC,
 > máquina de estados, paginação `Page<T>`, refresh token e traz um apêndice
 > TypeScript pronto. O bloco abaixo é histórico e **defasado** — em caso
-> de divergência, **o contrato vence**. O frontend foi alinhado ao v1.2 em 2026-06-08.
-> Análise completa de divergências em `docs/analise-contrato-v1.2.md`.
+> de divergência, **o contrato vence**. O frontend foi alinhado ao v1.2 em 2026-06-08;
+> **a v1.4 (ADR-015) ainda tem pendências de implementação no frontend — ver "Pendências
+> de implementação — contrato v1.4" abaixo.**
+> Análise completa de divergências (v1.2) em `docs/analise-contrato-v1.2.md`.
 
 **Base URL:** `http://localhost:8080` (dev local)
 
@@ -343,18 +346,21 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → P
 - [x] Histórico de versões do deal — `HistoryTimeline` (GET `/deals/{id}/dealHistory`)
 - [x] Config (ADM_SYSTEM): GET implementado no `config.service.ts`; `RecycleConfig` lido/prefill na `ConfigPage`; `getBonusConfigs`/`getAdsInvestments` disponíveis no service
 
-### Fase 6 — Analytics ✅ (implementado fora do plano original)
+### Fase 6 — Analytics ⚠️ DESALINHADA COM v1.4 (ADR-015)
+> Implementada contra o contrato ≤1.3. A v1.4 removeu 3 endpoints que esta fase usa — ver
+> "Pendências de implementação — contrato v1.4" em Divergências. Itens marcados `⚠️` apontam para
+> endpoints que agora respondem 404.
 - [x] Dashboard global com filtro de período (`from`/`to`)
-- [x] Gráfico de ROI por canal de Ads (um canal por vez)
-- [x] Funil de conversão por estágio/setor
-- [x] Drop-off por setor
+- [⚠️] Gráfico de ROI por canal de Ads — usa `GET /analytics/ads-roi` (**removido v1.4**); migrar para `dashboard.adsRoi`
+- [x] Funil de conversão por estágio/setor (`GET /analytics/conversion` — mantido; agora aceita escopo SECTOR)
+- [x] Drop-off por setor (`GET /analytics/dropoff` — mantido; agora aceita escopo SECTOR, array de 1–3 elementos)
 - [x] Ranking de performance
 - [x] Tela de performance individual
-- [x] `/analytics/bonus/{id}` — lê `BonusResultDTO { value }` (ver Divergências D6)
-- [x] Cálculo de bônus por período (`periodRef: YYYY-MM`)
+- [⚠️] Bônus via `GET /analytics/bonus/{id}` (**removido v1.4**); migrar para `UserPerformanceResultDTO.calculatedBonus`
+- [x] Cálculo de bônus por período (`periodRef: YYYY-MM`) — depende do endpoint removido acima
 - [x] KPIs no Overview (`totalExpectedCash`, fechamentos, captados, canais) + coluna `expectedCash` na performance
-- [x] Card de acompanhamento pós-procedimento (GET `/analytics/post-procedure`)
-- [x] View de desempenho pessoal `/meu-desempenho` (`MyPerformancePage`) — escopo OWN para `USER_ATTENDANT`; usa `user-performance/{id}` + `bonus/{id}`. Analytics agora é scope-aware: `ANALYTICS_SCOPE` (GLOBAL=ADM_SYSTEM → `/`; OWN=atendente → `/meu-desempenho`), guarda de rota unificada `RequireRoute` + `canAccessRoute`.
+- [⚠️] Card de acompanhamento pós-procedimento — usa `GET /analytics/post-procedure` (**removido v1.4**); migrar para `dashboard.postProcedures`
+- [x] View de desempenho pessoal `/meu-desempenho` (`MyPerformancePage`) — escopo OWN para `USER_ATTENDANT`; usa `user-performance/{id}` (+ `bonus/{id}` ⚠️ removido). Analytics scope-aware: `ANALYTICS_SCOPE` (GLOBAL=ADM_SYSTEM → `/`; OWN=atendente → `/meu-desempenho`), guarda de rota unificada `RequireRoute` + `canAccessRoute`.
 
 ---
 
@@ -418,6 +424,42 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → P
 - **DIV-02** — `models.ts`: corrigidos tipos nullable — `Customer.phone: string | null` e `DealHistory.fieldChanged: string | null`.
 - **DEC-02** — ✅ INVESTIGADO — sem alteração necessária. Dúvida: o backend usava `returnScheduledAt` para setar `scheduledAt` em `IN_CONTACT → SCHEDULED`? Leitura de `LeadTicketServiceImpl.java` (linhas 191-200) confirmou que sim — o bloco `if (dto.status() == SCHEDULED && currentStatus != POST_PROCEDURE)` seta `scheduledAt = dto.returnScheduledAt()` quando o campo não é nulo. O frontend já enviava o campo corretamente; o comportamento estava correto antes da investigação.
 - **DEC-03** — ✅ RESOLVIDO. Discriminador de logs automáticos na timeline (`TicketDetailSheet.tsx`) corrigido de regex no texto da nota para `statusBefore != null && statusAfter != null` (discriminador especificado no contrato §12). Notas genéricas "Status changed: X → Y" são ocultadas por serem redundantes com o badge de transição; notas contextuais de logs automáticos (lossReason em `POST_PROCEDURE → LOSS`, "Procedimento realizado" em `WIN → POST_PROCEDURE`, "Retorno agendado" em `POST_PROCEDURE → SCHEDULED`) continuam visíveis por não serem genéricas.
+
+### Sincronização contrato v1.3 (2026-06-11) ✅ APLICADA NO FRONTEND
+
+Contrato reescrito a partir da leitura direta do código backend. Itens que tocaram o frontend (ver §15, tabela D1–D15 do contrato):
+
+- **D1/D2** — `POST /users` usa campo **`password`** (não `passwordHash`); `PATCH /users/{username}/newPassword` envia **só `{ newPassword }`** (sem `oldPassword`). Aplicado no commit `5fd0f71`.
+- **D4** — Customer usa **`adsChannel`** (request, response e query param de `GET /customers`); campanha permanece `adCampaign`. Aplicado no commit `81d1818`.
+- **D5** — `GET /customers?name=` faz **match exato** (igualdade), não "contains/case-insensitive". Backend não oferece busca parcial por nome — a busca client-side atual (`UserListPage`/clientes) continua sendo a única forma de filtro parcial.
+- **D7/D8** — Login inválido → **401 com corpo JSON**; `/authentication/refresh` com token adulterado → **500**. O interceptor já trata "qualquer status ≠ 200 do refresh" como sessão perdida (`lib/api/index.ts`).
+- **D11/D12** — 422 usa reason phrase **"Unprocessable Content"** (não "Entity"); 500 retorna **"Erro Interno do Servidor"**. Não comparar strings literais de `error`.
+- **D13/D14** — Criar deal exige ticket em **`IN_EVALUATION`** (422 senão); desconto valida só **0–100** (sem aprovação). Já refletido no fluxo de Commercial (Fase 5).
+
+### Pendências de implementação — contrato v1.4 (ADR-015, 2026-06-14) ⚠️ NÃO RESOLVIDAS NO FRONTEND
+
+> A v1.4 tornou o analytics **scope-aware** e **removeu** três endpoints independentes. O frontend
+> ainda chama os endpoints removidos — eles passarão a responder **404**. Verificado por leitura
+> direta dos fontes em 2026-06-14. **São pendências reais, ainda não implementadas.**
+
+#### Endpoints removidos pelo backend (E1–E3) que o frontend ainda consome:
+
+| # | Endpoint removido | Origem no frontend (verificado) | De onde ler agora |
+|---|-------------------|---------------------------------|-------------------|
+| E1 | `GET /analytics/ads-roi` | `analytics.service.ts:24` (`getAdsRoi`) + `analytics.queries.ts:12` (`useAdsRoi`) | `dashboard.adsRoi` (já vem em `GET /analytics/dashboard`) |
+| E2 | `GET /analytics/bonus/{id}` | `analytics.service.ts:50` (`getBonus`) + `analytics.queries.ts:36` (`useBonus`); usado em `DashboardPage.tsx:216` e `MyPerformancePage.tsx:65` | `UserPerformanceResultDTO.calculatedBonus` (já vem de `user-performance/{id}`) |
+| E3 | `GET /analytics/post-procedure` | `analytics.service.ts:55` (`getPostProcedure`) + `analytics.queries.ts:44` (`usePostProcedure`); usado em `DashboardPage.tsx:355` | `dashboard.postProcedures` (campo novo no dashboard) |
+
+#### Tipo desatualizado (E4):
+
+- **`models.ts:183` `GlobalDashBoardResultDTO`** não tem o campo novo **`postProcedures: PostProcedureResultDTO`** (contrato §14, adicionado na v1.4). O tipo `PostProcedureResultDTO` já existe em `models.ts:175` — falta apenas adicioná-lo ao dashboard.
+
+#### Comportamento de scope a revisar (E5–E7) — oportunidade, não quebra:
+
+- **E5/E6** — `GET /analytics/conversion` e `GET /analytics/dropoff` agora aceitam escopo **`SECTOR`** (ADMs de setor recebem dados filtrados ao próprio setor). `conversion` ignora o `sector` do query param em escopo SECTOR; `dropoff` retorna array de **1 elemento** para SECTOR (vs. 3 para GLOBAL). A guarda de rota atual (`analyticsScope`: GLOBAL→`/`, OWN→`/meu-desempenho`) não expõe esses dados a ADMs de setor — habilitar é melhoria de UX, não correção.
+- **E7** — `user-performance/{targetUserId}` reforça a guarda **`OWN`**: papéis OWN devem passar **sempre o próprio UUID** no path (qualquer outro → 403). `MyPerformancePage.tsx` já usa o id do próprio usuário; verificar que nenhum fluxo OWN passa id de terceiros.
+
+> **Resumo da ação no frontend (ainda pendente):** (1) remover `getAdsRoi`/`getBonus`/`getPostProcedure` do `analytics.service.ts` e os hooks correspondentes; (2) adicionar `postProcedures` a `GlobalDashBoardResultDTO`; (3) reapontar `DashboardPage`/`MyPerformancePage` para ler `adsRoi`/`postProcedures` do dashboard e `calculatedBonus` do `user-performance`. Nenhuma dessas mudanças foi feita ainda — apenas a documentação (este CLAUDE.md + cópia do contrato) foi atualizada para a v1.4.
 
 ### Nota sobre escopos no PermissionSeeder vs contrato §8
 
