@@ -10,6 +10,7 @@ import { configService, type RecycleConfigDTO, type BonusConfigDTO, type AdsInve
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { CurrencyInput } from '@/components/ui/currency-input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -336,7 +337,14 @@ function AdsInvestmentCard() {
                 <FormItem>
                   <FormLabel>Valor investido (R$)</FormLabel>
                   <FormControl>
-                    <Input type="number" min={0.01} step={0.01} placeholder="0,00" {...field} value={(field.value as string | number | undefined) ?? ''} />
+                    <CurrencyInput
+                      placeholder="0,00"
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      value={field.value as number | undefined}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -20,15 +20,28 @@ export const discountSchema = z.object({
     .max(100, 'Máximo 100%'),
 })
 
-export const closeDealSchema = z.object({
-  paymentMethod: z.enum(
-    Object.values(PaymentMethod) as [PaymentMethod, ...PaymentMethod[]],
-    { message: 'Selecione a forma de pagamento' },
-  ),
-})
+export const closeDealSchema = z
+  .object({
+    paymentMethod: z.enum(
+      Object.values(PaymentMethod) as [PaymentMethod, ...PaymentMethod[]],
+      { message: 'Selecione a forma de pagamento' },
+    ),
+    // Apenas visual — não persiste no backend (sem módulo financeiro ainda).
+    installments: z.coerce
+      .number()
+      .int()
+      .min(2, 'Mínimo 2 parcelas')
+      .max(24, 'Máximo 24 parcelas')
+      .optional(),
+  })
+  .refine(
+    (d) => d.paymentMethod !== PaymentMethod.INSTALLMENT || d.installments != null,
+    { message: 'Informe o número de parcelas', path: ['installments'] },
+  )
 
 export type DealFormInput = z.input<typeof dealFormSchema>
 export type DealFormData = z.output<typeof dealFormSchema>
 export type DiscountFormInput = z.input<typeof discountSchema>
 export type DiscountFormData = z.output<typeof discountSchema>
-export type CloseDealFormData = z.infer<typeof closeDealSchema>
+export type CloseDealFormInput = z.input<typeof closeDealSchema>
+export type CloseDealFormData = z.output<typeof closeDealSchema>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -15,9 +15,10 @@ import {
   dealFormSchema, discountSchema, closeDealSchema,
   type DealFormInput, type DealFormData,
   type DiscountFormInput, type DiscountFormData,
-  type CloseDealFormData,
+  type CloseDealFormInput, type CloseDealFormData,
 } from './deal.schema'
 import ProcedureListEditor from './ProcedureListEditor'
+import { PaymentMethod } from '@/types/enums'
 import { SECTOR_LABELS, PAYMENT_METHOD_LABELS, PAYMENT_METHOD_OPTIONS } from '@/lib/labels'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -162,18 +163,25 @@ interface CloseDealDialogProps {
   ticketId: string
   open: boolean
   onOpenChange: (v: boolean) => void
+  /** Reporta o nº de parcelas escolhido (visual/local — não persiste no backend). */
+  onClosed: (installments: number | null) => void
 }
 
-function CloseDealDialog({ deal, ticketId, open, onOpenChange }: CloseDealDialogProps) {
+function CloseDealDialog({ deal, ticketId, open, onOpenChange, onClosed }: CloseDealDialogProps) {
   const close = useCloseDeal(deal.id, ticketId)
 
-  const form = useForm<CloseDealFormData>({
+  const form = useForm<CloseDealFormInput, unknown, CloseDealFormData>({
     resolver: zodResolver(closeDealSchema),
   })
 
+  const paymentMethod = useWatch({ control: form.control, name: 'paymentMethod' })
+  const isInstallment = paymentMethod === PaymentMethod.INSTALLMENT
+
   async function onSubmit(data: CloseDealFormData) {
     try {
-      await close.mutateAsync(data)
+      // O backend só persiste a forma de pagamento; parcelas são visuais.
+      await close.mutateAsync({ paymentMethod: data.paymentMethod })
+      onClosed(data.installments ?? null)
       onOpenChange(false)
     } catch {
       /* erro já exibido via toast pelo interceptor; mantém o diálogo aberto */
@@ -227,6 +235,32 @@ function CloseDealDialog({ deal, ticketId, open, onOpenChange }: CloseDealDialog
                 </FormItem>
               )}
             />
+
+            {isInstallment && (
+              <FormField
+                control={form.control}
+                name="installments"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número de parcelas</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={2}
+                        max={24}
+                        placeholder="Ex: 10"
+                        {...field}
+                        value={(field.value as string | number | undefined) ?? ''}
+                      />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Informação visual — será persistida quando o módulo financeiro entrar.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {close.isError && (
               <p className="text-sm text-destructive">Erro ao fechar deal.</p>
@@ -294,6 +328,8 @@ export default function DealSheet({ ticket, customer, open, onOpenChange }: Deal
   const [discountOpen, setDiscountOpen] = useState(false)
   const [closeOpen, setCloseOpen] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  // Parcelas escolhidas no fechamento — visual apenas, não persiste (some ao recarregar).
+  const [installments, setInstallments] = useState<number | null>(null)
 
   const canCreate = usePermission('DEAL', 'CREATE')
   const canUpdate = usePermission('DEAL', 'UPDATE')
@@ -441,6 +477,8 @@ export default function DealSheet({ ticket, customer, open, onOpenChange }: Deal
                       <span className="text-muted-foreground">Forma de pagamento</span>
                       <span className="font-medium">
                         {deal.paymentMethod ? PAYMENT_METHOD_LABELS[deal.paymentMethod] : '—'}
+                        {deal.paymentMethod === PaymentMethod.INSTALLMENT && installments != null &&
+                          ` em ${installments}x`}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -505,6 +543,7 @@ export default function DealSheet({ ticket, customer, open, onOpenChange }: Deal
             ticketId={ticket.id}
             open={closeOpen}
             onOpenChange={setCloseOpen}
+            onClosed={setInstallments}
           />
         </>
       )}
