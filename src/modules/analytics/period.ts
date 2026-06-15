@@ -2,13 +2,20 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { AnalyticsPeriod } from './analytics.service'
 
-// O backend (v1.5/ADR-016) exige que `from/to` caiba em um único mês calendário —
-// range cruzando meses → 422 (vale para /dashboard e /user-performance). Por isso o
-// período é sempre derivado de um mês "yyyy-MM" escolhido no <input type="month">.
-
-/** "yyyy-MM" do mês atual — default do seletor. */
+/** "yyyy-MM" do mês atual — default do seletor de mês (MyPerformancePage). */
 export function currentMonth(): string {
   return format(new Date(), 'yyyy-MM')
+}
+
+/** Últimos 30 dias — default do seletor de range do dashboard (ADR-017: range livre). */
+export function defaultPeriod(): AnalyticsPeriod {
+  const today = new Date()
+  const from = new Date(today)
+  from.setDate(today.getDate() - 29)
+  return {
+    from: format(from, 'yyyy-MM-dd'),
+    to: format(today, 'yyyy-MM-dd'),
+  }
 }
 
 /** "yyyy-MM" → { from: 1º dia, to: último dia } do mês. */

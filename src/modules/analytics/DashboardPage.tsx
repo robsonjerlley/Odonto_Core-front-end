@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from 'recharts'
-import { useDashboard, useConversion, useUserPerformance } from './analytics.queries'
-import { MonthFilter } from './MonthFilter'
-import { currentMonth, monthToPeriod, formatMonthLabel } from './period'
+import { useDashboard, useConversion } from './analytics.queries'
+import { DateRangeFilter } from './DateRangeFilter'
+import { defaultPeriod } from './period'
 import { SECTOR_LABELS, ADS_CHANNEL_LABELS } from '@/lib/labels'
 import { Sector } from '@/types/enums'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -160,52 +160,40 @@ function ConversionCard({ period }: { period: AnalyticsPeriod }) {
 }
 
 // ─── User performance sheet (inline dialog) ───────────────────────────────────
+// ADR-017: topPerformers do dashboard nunca inclui bônus (calculatedBonus=0,
+// bonusPeriodRef=null). Bônus mensal só está disponível em /user-performance/{id}
+// com range de mês único — acessível pela tela individual de performance.
 
 interface UserPerformanceDetailProps {
   performer: UserPerformanceResultDTO
-  period: AnalyticsPeriod
   onClose: () => void
 }
 
-function UserPerformanceDetail({ performer, period, onClose }: UserPerformanceDetailProps) {
-  const { data: perf } = useUserPerformance(performer.userId, period)
-
-  const data = perf ?? performer
-
+function UserPerformanceDetail({ performer, onClose }: UserPerformanceDetailProps) {
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-background rounded-xl shadow-xl w-full max-w-md space-y-4 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-semibold text-lg">{data.name}</h2>
-            <p className="text-sm text-muted-foreground">{SECTOR_LABELS[data.sector]}</p>
+            <h2 className="font-semibold text-lg">{performer.name}</h2>
+            <p className="text-sm text-muted-foreground">{SECTOR_LABELS[performer.sector]}</p>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           {[
-            { label: 'Atribuídos', value: data.totalAssigned },
-            { label: 'Convertidos', value: data.totalConverted },
-            { label: 'Conversão', value: pct(data.conversionPct) },
-            { label: 'Ticket médio', value: currency(data.avgTicketValue) },
-            { label: 'Caixa esperado', value: currency(data.expectedCash) },
+            { label: 'Atribuídos', value: performer.totalAssigned },
+            { label: 'Convertidos', value: performer.totalConverted },
+            { label: 'Conversão', value: pct(performer.conversionPct) },
+            { label: 'Ticket médio', value: currency(performer.avgTicketValue) },
+            { label: 'Caixa esperado', value: currency(performer.expectedCash) },
           ].map((item) => (
             <div key={item.label} className="rounded-lg bg-muted/40 p-3">
               <p className="text-lg font-bold">{item.value}</p>
               <p className="text-xs text-muted-foreground">{item.label}</p>
             </div>
           ))}
-        </div>
-
-        <div className="border-t pt-3 space-y-2">
-          <p className="text-sm font-medium">Cálculo de bônus</p>
-          <div className="flex justify-between items-center rounded-lg bg-muted/40 p-3">
-            <span className="text-sm text-muted-foreground">
-              Bônus de {formatMonthLabel(data.bonusPeriodRef)}
-            </span>
-            <span className="font-bold text-lg">{currency(data.calculatedBonus)}</span>
-          </div>
         </div>
       </div>
     </div>
@@ -214,13 +202,7 @@ function UserPerformanceDetail({ performer, period, onClose }: UserPerformanceDe
 
 // ─── Top performers table ─────────────────────────────────────────────────────
 
-function TopPerformersTable({
-  performers,
-  period,
-}: {
-  performers: UserPerformanceResultDTO[]
-  period: AnalyticsPeriod
-}) {
+function TopPerformersTable({ performers }: { performers: UserPerformanceResultDTO[] }) {
   const [selected, setSelected] = useState<UserPerformanceResultDTO | null>(null)
 
   if (performers.length === 0) {
@@ -269,7 +251,6 @@ function TopPerformersTable({
       {selected && (
         <UserPerformanceDetail
           performer={selected}
-          period={period}
           onClose={() => setSelected(null)}
         />
       )}
@@ -324,8 +305,7 @@ function PostProcedureCard({ data }: { data: PostProcedureResultDTO }) {
 // ─── Main DashboardPage ───────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const [month, setMonth] = useState(currentMonth)
-  const period = useMemo(() => monthToPeriod(month), [month])
+  const [period, setPeriod] = useState<AnalyticsPeriod>(defaultPeriod)
   const { data: dashboard, isLoading } = useDashboard(period)
   return (
     <div className="p-6 space-y-6">
@@ -333,10 +313,10 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
           <p className="text-sm text-muted-foreground">
-            Métricas de captação, conversão e performance do mês.
+            Métricas de captação, conversão e performance no período selecionado.
           </p>
         </div>
-        <MonthFilter month={month} onApply={setMonth} />
+        <DateRangeFilter period={period} onApply={setPeriod} />
       </div>
 
       {isLoading && (
@@ -402,7 +382,7 @@ export default function DashboardPage() {
               <CardTitle className="text-base">Ranking de performance</CardTitle>
             </CardHeader>
             <CardContent>
-              <TopPerformersTable performers={dashboard.topPerformers} period={period} />
+              <TopPerformersTable performers={dashboard.topPerformers} />
             </CardContent>
           </Card>
         </>
