@@ -17,6 +17,13 @@ export function useConversion(sector: Sector | '', period: AnalyticsPeriod) {
   })
 }
 
+export function useDropOff(period: AnalyticsPeriod) {
+  return useQuery({
+    queryKey: ['analytics-dropoff', period.from, period.to],
+    queryFn: () => analyticsService.getDropOff(period),
+  })
+}
+
 export function useUserPerformance(userId: string, period: AnalyticsPeriod) {
   return useQuery({
     queryKey: ['analytics-user-performance', userId, period.from, period.to],

@@ -44,6 +44,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'CUSTOMER:CREATE', 'CUSTOMER:READ', 'CUSTOMER:UPDATE',
     'TICKET:CREATE', 'TICKET:READ', 'TICKET:UPDATE',
     'CONTACT_LOG:CREATE', 'CONTACT_LOG:READ',
+    'ANALYTICS:READ', // escopo SECTOR — métricas do setor + pessoais
   ],
 
   [Role.USER_LEADS]: [
@@ -68,6 +69,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'DEAL:CREATE', 'DEAL:READ', 'DEAL:UPDATE',
     'TICKET:READ', 'TICKET:UPDATE',
     'CONTACT_LOG:READ',
+    'ANALYTICS:READ', // escopo SECTOR — métricas do setor + pessoais
   ],
 
   [Role.USER_EVALUATOR]: [
@@ -83,6 +85,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'TICKET:READ', 'TICKET:UPDATE', 'TICKET:CLOSE',
     'CUSTOMER:READ',
     'CONTACT_LOG:READ',
+    'ANALYTICS:READ', // escopo SECTOR — métricas do setor + pessoais
   ],
 
   [Role.USER_COMMERCIAL]: [
@@ -118,6 +121,9 @@ export type AnalyticsScope = 'GLOBAL' | 'SECTOR' | 'OWN'
 
 const ANALYTICS_SCOPE: Partial<Record<Role, AnalyticsScope>> = {
   [Role.ADM_SYSTEM]: 'GLOBAL',
+  [Role.ADM_LEADS]: 'SECTOR',
+  [Role.ADM_EVALUATOR]: 'SECTOR',
+  [Role.ADM_COMMERCIAL]: 'SECTOR',
   [Role.USER_LEADS]: 'OWN',
   [Role.USER_ATTENDANT]: 'OWN',
   [Role.USER_EVALUATOR]: 'OWN',
@@ -145,7 +151,7 @@ export const ROUTE_PERMISSION = {
   '/config':      { resource: 'CONFIG',    action: 'CONFIGURE' },
 } as const satisfies Record<string, { resource: Resource; action: Action }>
 
-export type AppRoute = '/' | '/meu-desempenho' | keyof typeof ROUTE_PERMISSION
+export type AppRoute = '/' | '/meu-desempenho' | '/analytics-setor' | keyof typeof ROUTE_PERMISSION
 
 /**
  * Restrição adicional por papel para rotas cuja capacidade (resource:action) é
@@ -162,9 +168,10 @@ const ROUTE_ROLES: Partial<Record<keyof typeof ROUTE_PERMISSION, readonly Role[]
 
 /** Pode o papel acessar a rota? Cobre as rotas de capacidade e as de analytics. */
 export function canAccessRoute(role: Role | undefined | null, route: AppRoute): boolean {
-  if (route === '/') return !!role                                      // home: qualquer autenticado
-  if (route === '/analytics') return analyticsScope(role) === 'GLOBAL'  // dashboard global só GLOBAL
-  if (route === '/meu-desempenho') return analyticsScope(role) != null  // métricas próprias
+  if (route === '/') return !!role                                       // home: qualquer autenticado
+  if (route === '/analytics') return analyticsScope(role) === 'GLOBAL'   // dashboard global só GLOBAL
+  if (route === '/analytics-setor') return analyticsScope(role) === 'SECTOR' // analytics do setor
+  if (route === '/meu-desempenho') return analyticsScope(role) != null   // métricas próprias
   const { resource, action } = ROUTE_PERMISSION[route]
   if (!can(role, resource, action)) return false
   const allowed = ROUTE_ROLES[route]

@@ -10,6 +10,7 @@ import TicketKanbanPage from '@/modules/funnel/TicketKanbanPage'
 import EvaluationsPage from '@/modules/evaluations/EvaluationsPage'
 import DealsPage from '@/modules/commercial/DealsPage'
 import DashboardPage from '@/modules/analytics/DashboardPage'
+import SectorAnalyticsPage from '@/modules/analytics/SectorAnalyticsPage'
 import MyPerformancePage from '@/modules/analytics/MyPerformancePage'
 import ConfigPage from '@/modules/config/ConfigPage'
 
@@ -32,6 +33,10 @@ export const router = createBrowserRouter([
           {
             element: <RequireRoute path="/analytics" />,
             children: [{ path: 'analytics', element: <DashboardPage /> }],
+          },
+          {
+            element: <RequireRoute path="/analytics-setor" />,
+            children: [{ path: 'analytics-setor', element: <SectorAnalyticsPage /> }],
           },
           {
             element: <RequireRoute path="/meu-desempenho" />,

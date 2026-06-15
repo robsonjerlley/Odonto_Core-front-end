@@ -32,6 +32,14 @@ const SECTION_CARDS: SectionCard[] = [
     accent: 'text-brand',
   },
   {
+    to: '/analytics-setor',
+    icon: LayoutDashboard,
+    title: 'Analytics do Setor',
+    description: 'Conversão e drop-off do seu setor, mais seu desempenho pessoal.',
+    show: (r) => analyticsScope(r) === 'SECTOR',
+    accent: 'text-brand',
+  },
+  {
     to: '/funnel',
     icon: Workflow,
     title: 'Pipeline',

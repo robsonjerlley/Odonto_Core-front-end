@@ -22,6 +22,7 @@ interface NavItem {
 const MAIN_NAV: NavItem[] = [
   { to: '/',               label: NAV_LABELS.home,         icon: Home,           end: true, show: (r) => canAccessRoute(r, '/') },
   { to: '/analytics',      label: NAV_LABELS.analytics,    icon: LayoutDashboard,            show: (r) => canAccessRoute(r, '/analytics') },
+  { to: '/analytics-setor', label: NAV_LABELS.sectorAnalytics, icon: LayoutDashboard,        show: (r) => analyticsScope(r) === 'SECTOR' },
   { to: '/meu-desempenho', label: NAV_LABELS.performance,  icon: LineChart,                  show: (r) => analyticsScope(r) === 'OWN' },
   { to: '/funnel',         label: NAV_LABELS.pipeline,     icon: Workflow,                   show: (r) => canAccessRoute(r, '/funnel') },
   { to: '/customers',      label: NAV_LABELS.patients,     icon: Users,                      show: (r) => canAccessRoute(r, '/customers') },
