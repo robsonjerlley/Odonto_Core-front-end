@@ -50,6 +50,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'CUSTOMER:CREATE', 'CUSTOMER:READ', 'CUSTOMER:UPDATE',
     'TICKET:CREATE', 'TICKET:READ', 'TICKET:UPDATE',
     'CONTACT_LOG:CREATE', 'CONTACT_LOG:READ',
+    'ANALYTICS:READ', // escopo OWN — métricas pessoais via /meu-desempenho
   ],
 
   [Role.USER_ATTENDANT]: [
@@ -74,6 +75,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'DEAL:CREATE', 'DEAL:READ', 'DEAL:UPDATE',
     'TICKET:READ', 'TICKET:UPDATE',
     'CONTACT_LOG:READ',
+    'ANALYTICS:READ', // escopo OWN — métricas pessoais via /meu-desempenho
   ],
 
   [Role.ADM_COMMERCIAL]: [
@@ -88,6 +90,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'TICKET:READ', 'TICKET:UPDATE', 'TICKET:CLOSE',
     'CUSTOMER:READ',
     'CONTACT_LOG:READ',
+    'ANALYTICS:READ', // escopo OWN — métricas pessoais via /meu-desempenho
   ],
 }
 
@@ -103,15 +106,22 @@ export function can(
 
 /**
  * Escopo de ANALYTICS por papel — espelha o `PermissionScope` do backend.
- * GLOBAL = vê o dashboard consolidado de toda a clínica (apenas ADM_SYSTEM).
- * OWN    = vê apenas as próprias métricas (USER_ATTENDANT).
+ * GLOBAL = dashboard consolidado de toda a clínica (apenas ADM_SYSTEM).
+ * SECTOR = métricas do próprio setor + pessoais (ADMs de setor).
+ * OWN    = apenas as próprias métricas (papéis USER).
  * Papéis ausentes do mapa não têm acesso a analytics.
+ *
+ * Decisão do cliente (2026-06-15): métricas de setor só para ADM_SYSTEM e os
+ * ADMs de setor (leads, evaluator, commercial); papéis USER veem só as próprias.
  */
-export type AnalyticsScope = 'GLOBAL' | 'OWN'
+export type AnalyticsScope = 'GLOBAL' | 'SECTOR' | 'OWN'
 
 const ANALYTICS_SCOPE: Partial<Record<Role, AnalyticsScope>> = {
   [Role.ADM_SYSTEM]: 'GLOBAL',
+  [Role.USER_LEADS]: 'OWN',
   [Role.USER_ATTENDANT]: 'OWN',
+  [Role.USER_EVALUATOR]: 'OWN',
+  [Role.USER_COMMERCIAL]: 'OWN',
 }
 
 /** Escopo de analytics do papel, ou `null` se não acessa nenhum analytics. */

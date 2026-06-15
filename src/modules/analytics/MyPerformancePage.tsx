@@ -11,11 +11,6 @@ function currency(v: number | null | undefined) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
 }
 
-function pct(v: number | null | undefined) {
-  if (v == null) return '—'
-  return `${Number(v).toFixed(1)}%`
-}
-
 export default function MyPerformancePage() {
   const user = useAuthStore((state) => state.user)
   const [month, setMonth] = useState(currentMonth)
@@ -24,12 +19,12 @@ export default function MyPerformancePage() {
   const userId = user?.id ?? ''
   const { data: perf, isLoading } = useUserPerformance(userId, period)
 
+  // Regra do cliente (N4): a view pessoal de um papel USER expõe só Atribuídos,
+  // Convertidos e Bônus apurado — Conversão, Ticket médio e Caixa esperado ficam
+  // restritos às visões de setor/global (ADMs).
   const metrics = [
     { label: 'Atribuídos', value: perf ? String(perf.totalAssigned) : '—' },
     { label: 'Convertidos', value: perf ? String(perf.totalConverted) : '—' },
-    { label: 'Conversão', value: pct(perf?.conversionPct) },
-    { label: 'Ticket médio', value: currency(perf?.avgTicketValue) },
-    { label: 'Caixa esperado', value: currency(perf?.expectedCash) },
   ]
 
   return (
@@ -52,7 +47,7 @@ export default function MyPerformancePage() {
         </p>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 gap-4 max-w-md">
         {metrics.map((m) => (
           <Card key={m.label}>
             <CardContent className="p-4">
