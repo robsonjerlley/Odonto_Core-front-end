@@ -1,14 +1,11 @@
 import api from '@/lib/api'
 import type {
   GlobalDashBoardResultDTO,
-  AdsRoiResultDTO,
   StageConversionResultDTO,
   SectorDropOffResultDTO,
   UserPerformanceResultDTO,
-  PostProcedureResultDTO,
-  BonusResultDTO,
 } from '@/types/models'
-import type { AdsChannel, Sector } from '@/types/enums'
+import type { Sector } from '@/types/enums'
 
 export interface AnalyticsPeriod {
   from: string
@@ -19,13 +16,6 @@ export const analyticsService = {
   getDashboard: (period: AnalyticsPeriod) =>
     api
       .get<GlobalDashBoardResultDTO>('/api/v1/analytics/dashboard', { params: period })
-      .then((r) => r.data),
-
-  getAdsRoi: (channel: AdsChannel, period: AnalyticsPeriod) =>
-    api
-      .get<AdsRoiResultDTO>('/api/v1/analytics/ads-roi', {
-        params: { channel, ...period },
-      })
       .then((r) => r.data),
 
   getConversion: (sector: Sector, period: AnalyticsPeriod) =>
@@ -45,15 +35,5 @@ export const analyticsService = {
       .get<UserPerformanceResultDTO>(`/api/v1/analytics/user-performance/${userId}`, {
         params: period,
       })
-      .then((r) => r.data),
-
-  getBonus: (userId: string, periodRef: string) =>
-    api
-      .get<BonusResultDTO>(`/api/v1/analytics/bonus/${userId}`, { params: { periodRef } })
-      .then((r) => r.data.value),
-
-  getPostProcedure: (period: AnalyticsPeriod) =>
-    api
-      .get<PostProcedureResultDTO>('/api/v1/analytics/post-procedure', { params: period })
       .then((r) => r.data),
 }

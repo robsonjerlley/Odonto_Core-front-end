@@ -1,17 +1,18 @@
-import { useState } from 'react'
-import { format, subDays } from 'date-fns'
+import { useMemo, useState } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from 'recharts'
-import { useDashboard, useConversion, useUserPerformance, useBonus, usePostProcedure } from './analytics.queries'
+import { useDashboard, useConversion, useUserPerformance } from './analytics.queries'
+import { MonthFilter } from './MonthFilter'
+import { currentMonth, monthToPeriod, formatMonthLabel } from './period'
 import { SECTOR_LABELS, ADS_CHANNEL_LABELS } from '@/lib/labels'
 import { Sector } from '@/types/enums'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { UserPerformanceResultDTO } from '@/types/models'
+import type { UserPerformanceResultDTO, PostProcedureResultDTO } from '@/types/models'
 import type { AnalyticsPeriod } from './analytics.service'
 
 // ─── paleta dos gráficos (alinhada aos tokens de marca) ───────────────────────
@@ -31,51 +32,6 @@ function currency(v: number | null | undefined) {
 function pct(v: number | null | undefined) {
   if (v == null) return '—'
   return `${Number(v).toFixed(1)}%`
-}
-
-function defaultPeriod(): AnalyticsPeriod {
-  const today = new Date()
-  return {
-    from: format(subDays(today, 30), 'yyyy-MM-dd'),
-    to: format(today, 'yyyy-MM-dd'),
-  }
-}
-
-// ─── Period filter ────────────────────────────────────────────────────────────
-
-interface PeriodFilterProps {
-  period: AnalyticsPeriod
-  onApply: (p: AnalyticsPeriod) => void
-}
-
-function PeriodFilter({ period, onApply }: PeriodFilterProps) {
-  const [start, setStart] = useState(period.from)
-  const [end, setEnd] = useState(period.to)
-
-  return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <label className="sr-only" htmlFor="period-start">Data inicial</label>
-      <input
-        id="period-start"
-        type="date"
-        className="border rounded-md px-3 py-1.5 text-sm bg-background"
-        value={start}
-        onChange={(e) => setStart(e.target.value)}
-      />
-      <span className="text-muted-foreground text-sm">até</span>
-      <label className="sr-only" htmlFor="period-end">Data final</label>
-      <input
-        id="period-end"
-        type="date"
-        className="border rounded-md px-3 py-1.5 text-sm bg-background"
-        value={end}
-        onChange={(e) => setEnd(e.target.value)}
-      />
-      <Button size="sm" onClick={() => onApply({ from: start, to: end })}>
-        Aplicar
-      </Button>
-    </div>
-  )
 }
 
 // ─── ROI chart ────────────────────────────────────────────────────────────────
@@ -212,8 +168,6 @@ interface UserPerformanceDetailProps {
 }
 
 function UserPerformanceDetail({ performer, period, onClose }: UserPerformanceDetailProps) {
-  const [periodRef, setPeriodRef] = useState(format(new Date(), 'yyyy-MM'))
-  const { data: bonus, isLoading: bonusLoading } = useBonus(performer.userId, periodRef)
   const { data: perf } = useUserPerformance(performer.userId, period)
 
   const data = perf ?? performer
@@ -246,23 +200,11 @@ function UserPerformanceDetail({ performer, period, onClose }: UserPerformanceDe
 
         <div className="border-t pt-3 space-y-2">
           <p className="text-sm font-medium">Cálculo de bônus</p>
-          <div className="flex items-center gap-2">
-            <label className="sr-only" htmlFor="bonus-period">Mês de referência (AAAA-MM)</label>
-            <input
-              id="bonus-period"
-              type="text"
-              placeholder="AAAA-MM"
-              pattern="\d{4}-\d{2}"
-              className="border rounded-md px-3 py-1.5 text-sm bg-background flex-1"
-              value={periodRef}
-              onChange={(e) => setPeriodRef(e.target.value)}
-            />
-          </div>
           <div className="flex justify-between items-center rounded-lg bg-muted/40 p-3">
-            <span className="text-sm text-muted-foreground">Bônus calculado</span>
-            <span className="font-bold text-lg">
-              {bonusLoading ? '...' : currency(bonus ?? null)}
+            <span className="text-sm text-muted-foreground">
+              Bônus de {formatMonthLabel(data.bonusPeriodRef)}
             </span>
+            <span className="font-bold text-lg">{currency(data.calculatedBonus)}</span>
           </div>
         </div>
       </div>
@@ -351,16 +293,13 @@ function KpiCard({ label, value, hint }: { label: string; value: string; hint?: 
 
 // ─── Post-procedure card ──────────────────────────────────────────────────────
 
-function PostProcedureCard({ period }: { period: AnalyticsPeriod }) {
-  const { data, isLoading } = usePostProcedure(period)
-
+function PostProcedureCard({ data }: { data: PostProcedureResultDTO }) {
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Acompanhamento pós-procedimento</CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
         {data && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {[
@@ -385,7 +324,8 @@ function PostProcedureCard({ period }: { period: AnalyticsPeriod }) {
 // ─── Main DashboardPage ───────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const [period, setPeriod] = useState<AnalyticsPeriod>(defaultPeriod)
+  const [month, setMonth] = useState(currentMonth)
+  const period = useMemo(() => monthToPeriod(month), [month])
   const { data: dashboard, isLoading } = useDashboard(period)
   return (
     <div className="p-6 space-y-6">
@@ -393,10 +333,10 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
           <p className="text-sm text-muted-foreground">
-            Métricas de captação, conversão e performance do período.
+            Métricas de captação, conversão e performance do mês.
           </p>
         </div>
-        <PeriodFilter period={period} onApply={setPeriod} />
+        <MonthFilter month={month} onApply={setMonth} />
       </div>
 
       {isLoading && (
@@ -454,7 +394,7 @@ export default function DashboardPage() {
           <ConversionCard period={period} />
 
           {/* Pós-procedimento */}
-          <PostProcedureCard period={period} />
+          <PostProcedureCard data={dashboard.postProcedures} />
 
           {/* Top performers */}
           <Card>

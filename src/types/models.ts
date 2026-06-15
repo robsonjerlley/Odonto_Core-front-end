@@ -126,10 +126,6 @@ export interface DealDetail {
     history: DealHistory[]
 }
 
-export interface BonusResultDTO {
-    value: number
-}
-
 // Analytics
 
 export interface AdsRoiResultDTO {
@@ -170,6 +166,7 @@ export interface UserPerformanceResultDTO {
     avgTicketValue: number
     expectedCash: number      // avgTicketValue líquido (após fator da forma de pagamento)
     calculatedBonus: number
+    bonusPeriodRef: string    // "yyyy-MM" — mês a que o calculatedBonus se refere (ADR-016/v1.5)
 }
 
 export interface PostProcedureResultDTO {
@@ -186,6 +183,7 @@ export interface GlobalDashBoardResultDTO {
     stageConversion: StageConversionResultDTO
     sectorDropOff: SectorDropOffResultDTO[]
     topPerformers: UserPerformanceResultDTO[]
+    postProcedures: PostProcedureResultDTO   // métricas pós-procedimento do período (v1.4/ADR-015)
     totalExpectedCash: number   // caixa esperado consolidado do período
 }
 

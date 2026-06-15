@@ -1,19 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { analyticsService, type AnalyticsPeriod } from './analytics.service'
-import type { AdsChannel, Sector } from '@/types/enums'
+import type { Sector } from '@/types/enums'
 
 export function useDashboard(period: AnalyticsPeriod) {
   return useQuery({
     queryKey: ['analytics-dashboard', period.from, period.to],
     queryFn: () => analyticsService.getDashboard(period),
-  })
-}
-
-export function useAdsRoi(channel: AdsChannel | '', period: AnalyticsPeriod) {
-  return useQuery({
-    queryKey: ['analytics-ads-roi', channel, period.from, period.to],
-    queryFn: () => analyticsService.getAdsRoi(channel as AdsChannel, period),
-    enabled: !!channel,
   })
 }
 
@@ -30,20 +22,5 @@ export function useUserPerformance(userId: string, period: AnalyticsPeriod) {
     queryKey: ['analytics-user-performance', userId, period.from, period.to],
     queryFn: () => analyticsService.getUserPerformance(userId, period),
     enabled: !!userId,
-  })
-}
-
-export function useBonus(userId: string, periodRef: string) {
-  return useQuery({
-    queryKey: ['analytics-bonus', userId, periodRef],
-    queryFn: () => analyticsService.getBonus(userId, periodRef),
-    enabled: !!userId && !!periodRef,
-  })
-}
-
-export function usePostProcedure(period: AnalyticsPeriod) {
-  return useQuery({
-    queryKey: ['analytics-post-procedure', period.from, period.to],
-    queryFn: () => analyticsService.getPostProcedure(period),
   })
 }

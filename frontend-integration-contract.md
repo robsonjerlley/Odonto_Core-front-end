@@ -1,10 +1,16 @@
 # Contrato de Integração Frontend ↔ Backend — OdontoCore CRM
 
-**Versão:** 1.4  
+**Versão:** 1.5  
 **Data:** 2026-06-14  
 **Branch:** main  
 **Commit de referência:** `949a4a9` (HEAD)  
 **Fonte da verdade:** código Java (controllers, DTOs, services, enums, `PermissionSeeder`, `GlobalExceptionHandler`)
+
+> **Changelog 1.5 (2026-06-14) — ADR-016 implementada: bônus mensal vs. métricas por range.**
+> `GET /analytics/user-performance/{targetUserId}` ganha o campo `bonusPeriodRef` (`yyyy-MM`),
+> que explicita o mês a que o `calculatedBonus` se refere. O range `from/to` passa a exigir
+> **um único mês calendário** (cross-month → **422**); como o `/dashboard` reutiliza esse cálculo
+> para `topPerformers`, o mesmo guard vale para o dashboard. Ver §15 bloco F1–F3.
 
 > **Changelog 1.4 (2026-06-14) — ADR-015 implementada: analytics scope-aware.** Endpoints
 > `/ads-roi`, `/post-procedure` e `/bonus/{id}` removidos como endpoints independentes — seus dados
@@ -1880,6 +1886,11 @@ diferentes por endpoint, e o `resolveScope` compara contra `targetSector`/`targe
 > Enviar o UUID de outro usuário → **403**. Papéis com escopo `GLOBAL` (`ADM_SYSTEM`) podem consultar
 > qualquer usuário. Papéis com escopo `SECTOR` → **403** (não têm acesso a este endpoint).
 
+> ⚠️ **Range de mês único (ADR-016):** este endpoint carrega bônus, que é **mensal**. O range `from/to`
+> deve estar contido em **um único mês calendário**. Range que cruza meses (ex.: `from=2026-05-25 &
+> to=2026-06-05`) → **422 Unprocessable Content**. O campo `bonusPeriodRef` na resposta informa
+> explicitamente o mês a que o `calculatedBonus` se refere (derivado do mês do `from`).
+
 ```json
 // Response 200
 {
@@ -1891,11 +1902,13 @@ diferentes por endpoint, e o `resolveScope` compara contra `targetSector`/`targe
   "conversionPct": 60.00,
   "avgTicketValue": 4500.00,
   "expectedCash": 4365.00,
-  "calculatedBonus": 218.25
+  "calculatedBonus": 218.25,
+  "bonusPeriodRef": "2026-06"
 }
 ```
 
 > `expectedCash = finalValue × paymentMethod.conversionFactor`
+> `calculatedBonus` reflete o mês inteiro de `bonusPeriodRef`; as demais métricas refletem o range `from..to`.
 
 ---
 
@@ -2362,6 +2375,7 @@ export interface UserPerformanceResult {
   avgTicketValue: number;
   expectedCash: number;
   calculatedBonus: number;
+  bonusPeriodRef: string; // ex: "2026-06" — mês a que o calculatedBonus se refere (ADR-016)
 }
 
 export interface BonusResult {
@@ -2603,6 +2617,16 @@ Esta tabela lista o que **mudou em relação ao texto anterior** deste contrato;
 | E5 | `GET /analytics/conversion` | Retornava 403 para escopo SECTOR | SECTOR usa `effectiveSector = user.getSector()`; parâmetro `sector` do query é **ignorado** para escopo SECTOR | ADMs de setor recebem dados do próprio setor sem precisar enviar `sector` |
 | E6 | `GET /analytics/dropoff` | Retornava 403 para escopo SECTOR | SECTOR retorna array com 1 elemento (setor do usuário) em vez dos 3 setores | Tratar response como array de 1 a 3 elementos conforme o papel |
 | E7 | `GET /analytics/user-performance/{targetUserId}` | Escopo OWN checava `callerId` — sempre passava; qualquer `targetUserId` era aceito | OWN: `targetUserId != user.id` → **403** | Papéis OWN devem passar sempre o próprio UUID no path |
+
+---
+
+### ADR-016 — Bônus mensal vs. métricas por range (2026-06-14)
+
+| # | Local | Situação anterior | Situação atual | Ação do frontend |
+|---|-------|-------------------|----------------|-----------------|
+| F1 | `GET /analytics/user-performance/{targetUserId}` response | `calculatedBonus` sem indicação do mês — derivado silenciosamente do mês do `from` | Campo novo `bonusPeriodRef: string` (`yyyy-MM`) explicita o mês do bônus | Adicionar `bonusPeriodRef` ao type `UserPerformanceResult`; exibir "Bônus de {mês}" |
+| F2 | `GET /analytics/user-performance/{targetUserId}` range | Range cruzando meses computava bônus só do mês do `from` e descartava o resto sem aviso | Range deve estar contido em **1 mês calendário**; cross-month → **422** | Restringir o seletor de período a 1 mês quando exibir bônus |
+| F3 | `GET /analytics/dashboard` range | aceitava qualquer range | Reutiliza `user-performance` p/ `topPerformers` → **mesmo guard de mês único (422)** | Restringir período do dashboard a 1 mês calendário |
 
 ---
 
