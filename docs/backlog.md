@@ -4,17 +4,17 @@
 > **não estão priorizados agora** (sem demanda validada, dependência aberta, ou esforço não justificado
 > ainda). Cada item carrega RICE + MoSCoW + gatilho de entrada.
 
-| ID | Título | MoSCoW | RICE (rel.) | Gatilho de entrada |
-|----|--------|--------|-------------|--------------------|
-| **B-001** | Expor analytics por setor (scope SECTOR) a ADMs de setor | Should | Médio | Demanda de um gestor de setor por métricas próprias |
+| ID | Título | MoSCoW | RICE (rel.) | Status |
+|----|--------|--------|-------------|--------|
+| **B-001** | Expor analytics por setor (scope SECTOR) a ADMs de setor | Should | Médio | ✅ IMPLEMENTADO (2026-06-15) |
 
 ---
 
 ## B-001 — Expor analytics por setor (scope SECTOR) a ADMs de setor
 
-**Status:** ✅ DEMANDADO (2026-06-14) — sai do backlog; vira dependência de D-08/D-10/D-13 em
-`docs/demandas-2026-06-14.md`. O gatilho de entrada ("demanda de um gestor por métricas próprias")
-foi acionado pelo cliente. As decisões de UX/arquitetura abaixo seguem válidas e precisam ser fechadas.
+**Status:** ✅ IMPLEMENTADO (2026-06-15) — tela dedicada `/analytics-setor` (`SectorAnalyticsPage`)
+criada; ADMs de setor (`ADM_LEADS`, `ADM_EVALUATOR`, `ADM_COMMERCIAL`) acessam conversão + drop-off
+do próprio setor + performance pessoal. Fecha D-08, D-10, D-13 em `docs/demandas-2026-06-14.md`.
 **Origem:** ADR-015 (contrato v1.4), §15 tabela E5/E6
 **Relacionado:** `docs/demandas-2026-06-14.md` (D-08/D-10/D-13/N3), `docs/handoff-analytics-v1.4.md` (Item B)
 

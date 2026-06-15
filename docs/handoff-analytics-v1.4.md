@@ -2,7 +2,9 @@
 
 **Autor:** Product Owner
 **Data:** 2026-06-14
-**Status:** Pronto para refinamento por UI/UX e Arquiteto
+**Status:** ✅ CONCLUÍDO — Item A implementado em 2026-06-14; ADR-017 (2026-06-15) encerrou o bloqueio
+do dashboard (range livre; `DateRangeFilter` no lugar do `MonthFilter`). Item B implementado em
+2026-06-15 (`SectorAnalyticsPage`). Documento histórico — não requer mais ação.
 **Origem:** ADR-015 (contrato v1.4, `frontend-integration-contract.md` §13 e §15 tabela E1–E7)
 **Severidade:** Pré-lançamento (sem usuário real afetado) — Must-Have de sprint, **não** hotfix.
 
@@ -128,17 +130,18 @@ telas **já buscam** via `user-performance/{id}`.
 
 ---
 
-## 5. Definition of Done (Item A + C)
+## 5. Definition of Done (Item A + C) — ✅ TODOS CONCLUÍDOS
 
-- [ ] `analytics.service.ts` sem `getAdsRoi`/`getBonus`/`getPostProcedure`.
-- [ ] `analytics.queries.ts` sem `useAdsRoi`/`useBonus`/`usePostProcedure`.
-- [ ] `GlobalDashBoardResultDTO` com `postProcedures: PostProcedureResultDTO`.
-- [ ] `DashboardPage` lê bônus de `calculatedBonus` e pós-procedimento de `dashboard.postProcedures`;
+- [x] `analytics.service.ts` sem `getAdsRoi`/`getBonus`/`getPostProcedure`.
+- [x] `analytics.queries.ts` sem `useAdsRoi`/`useBonus`/`usePostProcedure`.
+- [x] `GlobalDashBoardResultDTO` com `postProcedures: PostProcedureResultDTO`.
+- [x] `DashboardPage` lê bônus de `calculatedBonus` e pós-procedimento de `dashboard.postProcedures`;
       nenhuma chamada a endpoint removido.
-- [ ] `MyPerformancePage` lê bônus de `calculatedBonus` (sem `useBonus`).
-- [ ] Guarda OWN do `user-performance` confirmada (Item C).
-- [ ] Decisão de `periodRef` aplicada (manter ou remover) e UI ajustada conforme.
-- [ ] `npm run build` e lint limpos.
+- [x] `MyPerformancePage` lê bônus de `calculatedBonus` (sem `useBonus`).
+- [x] Guarda OWN do `user-performance` confirmada (Item C).
+- [x] Decisão de `periodRef`: removido — `MonthFilter` substituído por `DateRangeFilter` no dashboard
+      (ADR-017); `MyPerformancePage` mantém `MonthFilter` (mês único obrigatório em `user-performance`).
+- [x] `npm run build` e lint limpos.
 
 ---
 
