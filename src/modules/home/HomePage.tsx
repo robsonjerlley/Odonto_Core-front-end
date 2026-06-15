@@ -7,7 +7,7 @@ import {
   ArrowRight, type LucideIcon,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
-import { can, analyticsScope } from '@/lib/permissions'
+import { canAccessRoute, analyticsScope } from '@/lib/permissions'
 import { ROLE_LABELS } from '@/lib/labels'
 import type { Role } from '@/types/enums'
 
@@ -28,7 +28,7 @@ const SECTION_CARDS: SectionCard[] = [
     icon: LayoutDashboard,
     title: 'Analytics',
     description: 'Dashboard global, ROI de campanhas e desempenho da clínica.',
-    show: (r) => analyticsScope(r) === 'GLOBAL',
+    show: (r) => canAccessRoute(r, '/analytics'),
     accent: 'text-brand',
   },
   {
@@ -36,7 +36,7 @@ const SECTION_CARDS: SectionCard[] = [
     icon: Workflow,
     title: 'Pipeline',
     description: 'Gerencie tickets de leads, registre contatos e avance no funil.',
-    show: (r) => can(r, 'TICKET', 'READ'),
+    show: (r) => canAccessRoute(r, '/funnel'),
     accent: 'text-sky-600',
   },
   {
@@ -44,7 +44,7 @@ const SECTION_CARDS: SectionCard[] = [
     icon: Users,
     title: 'Pacientes',
     description: 'Cadastro de clientes, histórico e dados de captação.',
-    show: (r) => can(r, 'CUSTOMER', 'READ'),
+    show: (r) => canAccessRoute(r, '/customers'),
     accent: 'text-violet-600',
   },
   {
@@ -52,7 +52,7 @@ const SECTION_CARDS: SectionCard[] = [
     icon: Stethoscope,
     title: 'Avaliações',
     description: 'Pacientes agendados e em avaliação. Crie orçamentos e encaminhe para negociação.',
-    show: (r) => can(r, 'DEAL', 'CREATE'),
+    show: (r) => canAccessRoute(r, '/avaliacoes'),
     accent: 'text-teal-600',
   },
   {
@@ -60,7 +60,7 @@ const SECTION_CARDS: SectionCard[] = [
     icon: Handshake,
     title: 'Negociações',
     description: 'Deals ativos, descontos, fechamento e histórico de propostas.',
-    show: (r) => can(r, 'DEAL', 'READ'),
+    show: (r) => canAccessRoute(r, '/commercial'),
     accent: 'text-emerald-600',
   },
   {
@@ -76,7 +76,7 @@ const SECTION_CARDS: SectionCard[] = [
     icon: UserCog,
     title: 'Equipe',
     description: 'Gerenciamento de usuários, papéis e setores.',
-    show: (r) => can(r, 'USER', 'READ'),
+    show: (r) => canAccessRoute(r, '/users'),
     accent: 'text-slate-600',
   },
   {
@@ -84,7 +84,7 @@ const SECTION_CARDS: SectionCard[] = [
     icon: Settings,
     title: 'Configurações',
     description: 'Reciclagem de leads, bônus e investimentos em ADS.',
-    show: (r) => can(r, 'CONFIG', 'CONFIGURE'),
+    show: (r) => canAccessRoute(r, '/config'),
     accent: 'text-slate-600',
   },
 ]

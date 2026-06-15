@@ -4,7 +4,7 @@ import {
   UserCog, Settings, LogOut, LineChart, Moon, Sun, Stethoscope, type LucideIcon,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
-import { can, analyticsScope } from '@/lib/permissions'
+import { canAccessRoute, analyticsScope } from '@/lib/permissions'
 import type { Role } from '@/types/enums'
 import { Button } from '@/components/ui/button'
 import { ROLE_LABELS, NAV_LABELS } from '@/lib/labels'
@@ -20,18 +20,18 @@ interface NavItem {
 }
 
 const MAIN_NAV: NavItem[] = [
-  { to: '/',               label: NAV_LABELS.home,         icon: Home,           end: true, show: () => true },
-  { to: '/analytics',      label: NAV_LABELS.analytics,    icon: LayoutDashboard,            show: (r) => analyticsScope(r) === 'GLOBAL' },
+  { to: '/',               label: NAV_LABELS.home,         icon: Home,           end: true, show: (r) => canAccessRoute(r, '/') },
+  { to: '/analytics',      label: NAV_LABELS.analytics,    icon: LayoutDashboard,            show: (r) => canAccessRoute(r, '/analytics') },
   { to: '/meu-desempenho', label: NAV_LABELS.performance,  icon: LineChart,                  show: (r) => analyticsScope(r) === 'OWN' },
-  { to: '/funnel',         label: NAV_LABELS.pipeline,     icon: Workflow,                   show: (r) => can(r, 'TICKET', 'READ') },
-  { to: '/customers',      label: NAV_LABELS.patients,     icon: Users,                      show: (r) => can(r, 'CUSTOMER', 'READ') },
-  { to: '/avaliacoes',     label: NAV_LABELS.evaluations,  icon: Stethoscope,                show: (r) => can(r, 'DEAL', 'CREATE') },
-  { to: '/commercial',     label: NAV_LABELS.negotiations, icon: Handshake,                  show: (r) => can(r, 'DEAL', 'READ') },
+  { to: '/funnel',         label: NAV_LABELS.pipeline,     icon: Workflow,                   show: (r) => canAccessRoute(r, '/funnel') },
+  { to: '/customers',      label: NAV_LABELS.patients,     icon: Users,                      show: (r) => canAccessRoute(r, '/customers') },
+  { to: '/avaliacoes',     label: NAV_LABELS.evaluations,  icon: Stethoscope,                show: (r) => canAccessRoute(r, '/avaliacoes') },
+  { to: '/commercial',     label: NAV_LABELS.negotiations, icon: Handshake,                  show: (r) => canAccessRoute(r, '/commercial') },
 ]
 
 const ADMIN_NAV: NavItem[] = [
-  { to: '/users',  label: NAV_LABELS.team,     icon: UserCog,  show: (r) => can(r, 'USER', 'READ') },
-  { to: '/config', label: NAV_LABELS.settings, icon: Settings, show: (r) => can(r, 'CONFIG', 'CONFIGURE') },
+  { to: '/users',  label: NAV_LABELS.team,     icon: UserCog,  show: (r) => canAccessRoute(r, '/users') },
+  { to: '/config', label: NAV_LABELS.settings, icon: Settings, show: (r) => canAccessRoute(r, '/config') },
 ]
 
 function NavItemLink({ item }: { item: NavItem }) {

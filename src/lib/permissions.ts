@@ -137,12 +137,28 @@ export const ROUTE_PERMISSION = {
 
 export type AppRoute = '/' | '/meu-desempenho' | keyof typeof ROUTE_PERMISSION
 
+/**
+ * Restrição adicional por papel para rotas cuja capacidade (resource:action) é
+ * ampla demais para servir de controle de tela. Muitos papéis têm `TICKET:READ`
+ * e `DEAL:READ` para ler tickets/deals **dentro da própria tela** (avaliação lê
+ * tickets na tela de Avaliações; comercial lê deals na de Negociações), mas isso
+ * **não** deve liberar o Pipeline nem a tela de Negociações para fora do setor.
+ * Quando a rota aparece aqui, além da capacidade o papel precisa estar na lista.
+ */
+const ROUTE_ROLES: Partial<Record<keyof typeof ROUTE_PERMISSION, readonly Role[]>> = {
+  '/funnel':     [Role.ADM_SYSTEM, Role.ADM_LEADS, Role.USER_LEADS, Role.USER_ATTENDANT],
+  '/commercial': [Role.ADM_SYSTEM, Role.ADM_COMMERCIAL, Role.USER_COMMERCIAL],
+}
+
 /** Pode o papel acessar a rota? Cobre as rotas de capacidade e as de analytics. */
 export function canAccessRoute(role: Role | undefined | null, route: AppRoute): boolean {
   if (route === '/') return !!role                                      // home: qualquer autenticado
-  if (route === '/meu-desempenho') return analyticsScope(role) != null // métricas próprias
+  if (route === '/analytics') return analyticsScope(role) === 'GLOBAL'  // dashboard global só GLOBAL
+  if (route === '/meu-desempenho') return analyticsScope(role) != null  // métricas próprias
   const { resource, action } = ROUTE_PERMISSION[route]
-  return can(role, resource, action)
+  if (!can(role, resource, action)) return false
+  const allowed = ROUTE_ROLES[route]
+  return !allowed || (!!role && allowed.includes(role))
 }
 
 /** Ordem de preferência ao escolher a primeira rota acessível de um papel. */

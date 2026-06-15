@@ -23,6 +23,9 @@ const LEADS_COLUMNS: TicketStatus[] = [
   TicketStatus.POST_PROCEDURE,
 ]
 
+// Evaluator e commercial não acessam mais o Pipeline (restrito por papel em
+// `canAccessRoute`/ROUTE_ROLES). Aqui sobram leads/atendente (colunas do domínio)
+// e ADM_SYSTEM, que enxerga o funil completo.
 function getVisibleColumns(role: Role | undefined | null): TicketStatus[] {
   if (
     role === Role.USER_LEADS ||
