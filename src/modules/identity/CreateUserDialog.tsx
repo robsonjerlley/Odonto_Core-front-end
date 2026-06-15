@@ -48,7 +48,7 @@ export default function CreateUserDialog({ open, onOpenChange }: CreateUserDialo
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Novo usuário</DialogTitle>
         </DialogHeader>
@@ -57,7 +57,7 @@ export default function CreateUserDialog({ open, onOpenChange }: CreateUserDialo
             <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem>
                 <FormLabel>Nome</FormLabel>
-                <FormControl><Input placeholder="João Silva" {...field} /></FormControl>
+                <FormControl><Input placeholder="Nome completo" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -65,7 +65,7 @@ export default function CreateUserDialog({ open, onOpenChange }: CreateUserDialo
             <FormField control={form.control} name="username" render={({ field }) => (
               <FormItem>
                 <FormLabel>Usuário</FormLabel>
-                <FormControl><Input placeholder="joao.silva" {...field} /></FormControl>
+                <FormControl><Input placeholder="nome.sobrenome" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -78,7 +78,7 @@ export default function CreateUserDialog({ open, onOpenChange }: CreateUserDialo
               </FormItem>
             )} />
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <FormField control={form.control} name="sector" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Setor</FormLabel>
