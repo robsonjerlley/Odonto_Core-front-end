@@ -67,13 +67,13 @@ enum CustomerSource { ADS_PAID, ORGANIC, INDICATION }
 
 > **⚠ FONTE DA VERDADE:** o contrato oficial de integração está em
 > `B:\projects\odontocore.crm.frontend\frontend-integration-contract.md`
-> (v1.4, 2026-06-14 — sincronizado com `B:\projects\odontocore.crm\odontocore.crm\.claude\specs\frontend-integration-contract.md`,
+> (v1.5, 2026-06-14 — sincronizado com `B:\projects\odontocore.crm\odontocore.crm\.claude\specs\frontend-integration-contract.md`,
 > commit backend `949a4a9`). Ele descreve endpoints, DTOs, enums, modelo de erro, RBAC,
 > máquina de estados, paginação `Page<T>`, refresh token e traz um apêndice
 > TypeScript pronto. O bloco abaixo é histórico e **defasado** — em caso
 > de divergência, **o contrato vence**. O frontend foi alinhado ao v1.2 em 2026-06-08;
-> **a v1.4 (ADR-015) ainda tem pendências de implementação no frontend — ver "Pendências
-> de implementação — contrato v1.4" abaixo.**
+> **a migração analytics v1.4/v1.5 (ADR-015 + ADR-016) foi concluída em 2026-06-14 — ver
+> "Migração analytics v1.4/v1.5" abaixo.**
 > Análise completa de divergências (v1.2) em `docs/analise-contrato-v1.2.md`.
 
 **Base URL:** `http://localhost:8080` (dev local)
@@ -346,21 +346,23 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → P
 - [x] Histórico de versões do deal — `HistoryTimeline` (GET `/deals/{id}/dealHistory`)
 - [x] Config (ADM_SYSTEM): GET implementado no `config.service.ts`; `RecycleConfig` lido/prefill na `ConfigPage`; `getBonusConfigs`/`getAdsInvestments` disponíveis no service
 
-### Fase 6 — Analytics ⚠️ DESALINHADA COM v1.4 (ADR-015)
-> Implementada contra o contrato ≤1.3. A v1.4 removeu 3 endpoints que esta fase usa — ver
-> "Pendências de implementação — contrato v1.4" em Divergências. Itens marcados `⚠️` apontam para
-> endpoints que agora respondem 404.
-- [x] Dashboard global com filtro de período (`from`/`to`)
-- [⚠️] Gráfico de ROI por canal de Ads — usa `GET /analytics/ads-roi` (**removido v1.4**); migrar para `dashboard.adsRoi`
-- [x] Funil de conversão por estágio/setor (`GET /analytics/conversion` — mantido; agora aceita escopo SECTOR)
-- [x] Drop-off por setor (`GET /analytics/dropoff` — mantido; agora aceita escopo SECTOR, array de 1–3 elementos)
+### Fase 6 — Analytics ✅ ALINHADA COM v1.5 (ADR-016)
+> Migração concluída em 2026-06-14 (commit a seguir). Os 3 endpoints removidos na v1.4 saíram do
+> frontend; o backend foi para v1.5 (ADR-016): `user-performance` devolve `bonusPeriodRef` e exige
+> `from/to` em **mês único** (cross-month → 422, vale p/ dashboard). O seletor virou **month picker**
+> (`<input type="month">`, `src/modules/analytics/period.ts` + `MonthFilter.tsx`) — substitui o range
+> e elimina o 422. Detalhes em `docs/handoff-analytics-v1.4.md` e `docs/adr-frontend-001-*`.
+- [x] Dashboard global com filtro de mês (deriva `from`=dia 1 / `to`=último dia)
+- [x] Gráfico de ROI por canal de Ads — lê `dashboard.adsRoi` (endpoint `ads-roi` removido)
+- [x] Funil de conversão por estágio/setor (`GET /analytics/conversion` — mantido; aceita escopo SECTOR)
+- [x] Drop-off por setor (`GET /analytics/dropoff` — mantido; aceita escopo SECTOR, array de 1–3 elementos)
 - [x] Ranking de performance
 - [x] Tela de performance individual
-- [⚠️] Bônus via `GET /analytics/bonus/{id}` (**removido v1.4**); migrar para `UserPerformanceResultDTO.calculatedBonus`
-- [x] Cálculo de bônus por período (`periodRef: YYYY-MM`) — depende do endpoint removido acima
+- [x] Bônus de `UserPerformanceResultDTO.calculatedBonus` (endpoint `bonus/{id}` removido)
+- [x] Bônus rotulado com `bonusPeriodRef` ("Bônus de {mês}"); `periodRef` removido do analytics (segue só no Config)
 - [x] KPIs no Overview (`totalExpectedCash`, fechamentos, captados, canais) + coluna `expectedCash` na performance
-- [⚠️] Card de acompanhamento pós-procedimento — usa `GET /analytics/post-procedure` (**removido v1.4**); migrar para `dashboard.postProcedures`
-- [x] View de desempenho pessoal `/meu-desempenho` (`MyPerformancePage`) — escopo OWN para `USER_ATTENDANT`; usa `user-performance/{id}` (+ `bonus/{id}` ⚠️ removido). Analytics scope-aware: `ANALYTICS_SCOPE` (GLOBAL=ADM_SYSTEM → `/`; OWN=atendente → `/meu-desempenho`), guarda de rota unificada `RequireRoute` + `canAccessRoute`.
+- [x] Card de acompanhamento pós-procedimento — lê `dashboard.postProcedures` (endpoint `post-procedure` removido)
+- [x] View de desempenho pessoal `/meu-desempenho` (`MyPerformancePage`) — escopo OWN para `USER_ATTENDANT`; usa `user-performance/{id}` (bônus via `calculatedBonus`). Analytics scope-aware: `ANALYTICS_SCOPE` (GLOBAL=ADM_SYSTEM → `/`; OWN=atendente → `/meu-desempenho`), guarda de rota unificada `RequireRoute` + `canAccessRoute`.
 
 ---
 
@@ -436,11 +438,21 @@ Contrato reescrito a partir da leitura direta do código backend. Itens que toca
 - **D11/D12** — 422 usa reason phrase **"Unprocessable Content"** (não "Entity"); 500 retorna **"Erro Interno do Servidor"**. Não comparar strings literais de `error`.
 - **D13/D14** — Criar deal exige ticket em **`IN_EVALUATION`** (422 senão); desconto valida só **0–100** (sem aprovação). Já refletido no fluxo de Commercial (Fase 5).
 
-### Pendências de implementação — contrato v1.4 (ADR-015, 2026-06-14) ⚠️ NÃO RESOLVIDAS NO FRONTEND
+### Migração analytics v1.4/v1.5 (ADR-015 + ADR-016) ✅ RESOLVIDA NO FRONTEND (2026-06-14)
 
-> A v1.4 tornou o analytics **scope-aware** e **removeu** três endpoints independentes. O frontend
-> ainda chama os endpoints removidos — eles passarão a responder **404**. Verificado por leitura
-> direta dos fontes em 2026-06-14. **São pendências reais, ainda não implementadas.**
+> **Resolução (v1.5/ADR-016):** o backend não só removeu os 3 endpoints (v1.4) como adicionou
+> `bonusPeriodRef` ao `user-performance` e passou a **exigir `from/to` em mês único** (cross-month →
+> 422, inclusive no `/dashboard`). No frontend: (1) removidos `getAdsRoi`/`getBonus`/`getPostProcedure`
+> e os hooks `useAdsRoi`/`useBonus`/`usePostProcedure`; (2) `models.ts` — removido `BonusResultDTO`,
+> `UserPerformanceResultDTO` ganhou `bonusPeriodRef`, `GlobalDashBoardResultDTO` ganhou `postProcedures`;
+> (3) `DashboardPage`/`MyPerformancePage` leem `adsRoi`/`postProcedures` do dashboard e `calculatedBonus`
+> do `user-performance`; (4) seletor de período virou **month picker** (`period.ts` + `MonthFilter.tsx`),
+> garantindo mês único por construção e eliminando o vazamento de semântica (bônus e métricas agora na
+> mesma janela). Build + lint limpos. A tabela abaixo é histórica (estado pré-migração).
+>
+> Pendência de fundo encerrada pelo backend na ADR-016. **Item B** (analytics escopo SECTOR para ADMs de
+> setor — E5/E6) segue em backlog (`docs/backlog.md` B-001). **Item C** (guarda OWN no `user-performance`)
+> já está *enforced* no backend; falta só cobertura de teste.
 
 #### Endpoints removidos pelo backend (E1–E3) que o frontend ainda consome:
 
@@ -492,6 +504,19 @@ O backend (seeder) é a fonte da verdade para comportamento em produção. O con
 - **Discriminador de logs na timeline** — `TicketDetailSheet.tsx` usa `statusBefore != null && statusAfter != null` para identificar logs automáticos de transição (contrato §12). Notas genéricas "Status changed: X → Y" são ocultadas (redundantes com o badge); notas contextuais de logs automáticos (lossReason, "Procedimento realizado", "Retorno agendado") são exibidas. Evolução futura: campo `logType: 'MANUAL' | 'SYSTEM'` no backend tornará a distinção explícita.
 
 ---
+
+## Demandas em aberto (cliente, 2026-06-14)
+
+Primeira leva de demandas do cliente, **verificada contra o código** e registrada em
+`docs/demandas-2026-06-14.md` (IDs `D-01`…`D-14`, com `arquivo:linha`, classificação FRONT/BACK/REPRO e
+abordagem). Serão resolvidas **uma a uma** nas próximas sessões. Resumo dos temas:
+- **UI (D-01, D-02, D-06, D-07):** placeholders de nome, card de novo usuário, máscara monetária nos
+  inputs, parcelas visuais no fechamento de deal.
+- **RBAC de telas (D-04, D-10, D-11, D-13, D-14):** evaluator/commercial veem Pipeline e colunas
+  indevidas — raiz em `getVisibleColumns` (`TicketKanbanPage.tsx:26`) e nav (`AppLayout.tsx`).
+- **Escopo de analytics (D-08, D-09, D-12, D-13, D-14):** front é mais restritivo que o backend em
+  `ANALYTICS:READ`; falta escopo `SECTOR` (`permissions.ts:110`) — depende de B-001.
+- **Backend/decisão (D-03 ROI, D-05 conversão >100%):** ver "Decisões abertas" no doc.
 
 ## Arquivos-chave do backend para consulta
 

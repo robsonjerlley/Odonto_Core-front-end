@@ -12,9 +12,11 @@
 
 ## B-001 — Expor analytics por setor (scope SECTOR) a ADMs de setor
 
-**Status:** 🔜 Backlog — aguardando demanda
+**Status:** ✅ DEMANDADO (2026-06-14) — sai do backlog; vira dependência de D-08/D-10/D-13 em
+`docs/demandas-2026-06-14.md`. O gatilho de entrada ("demanda de um gestor por métricas próprias")
+foi acionado pelo cliente. As decisões de UX/arquitetura abaixo seguem válidas e precisam ser fechadas.
 **Origem:** ADR-015 (contrato v1.4), §15 tabela E5/E6
-**Relacionado:** `docs/handoff-analytics-v1.4.md` (Item B), `docs/analise-contrato-v1.2.md`
+**Relacionado:** `docs/demandas-2026-06-14.md` (D-08/D-10/D-13/N3), `docs/handoff-analytics-v1.4.md` (Item B)
 
 ### Contexto
 
