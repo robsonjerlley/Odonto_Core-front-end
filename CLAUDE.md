@@ -502,8 +502,9 @@ Registradas em `docs/demandas-2026-06-14.md` (IDs `D-01`…`D-14`). **Quase toda
 - D-03 ROI: resolvido pela ADR-017 (range livre de 30 dias no dashboard)
 
 **Pendentes:**
-- **D-05** 🟥 BACK — conversão >100% — corrigir denominador em `AnalyticsServiceImpl` no backend
 - **D-12** 🟨 REPRO — `USER_ATTENDANT` 403 na performance — reproduzir em runtime; pode ser correção no backend
+
+**D-05 ✅ resolvido no backend (fix H1, 2026-06-15):** `scheduledCount` em `getConversionByStage` corrigido para contar por status (não por `scheduledAt != null`) — porcentagens agora ≤ 100% por construção. Nenhuma mudança no frontend.
 
 ## Arquivos-chave do backend para consulta
 
