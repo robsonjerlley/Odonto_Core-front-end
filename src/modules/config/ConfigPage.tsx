@@ -118,7 +118,7 @@ const bonusSchema = z.object({
       const n = parseFloat(normalized)
       return Number.isNaN(n) ? v : n
     },
-    z.number({ invalid_type_error: 'Informe um número válido' }).positive('Valor deve ser positivo').optional(),
+    z.number({ error: 'Informe um número válido' }).positive('Valor deve ser positivo').optional(),
   ),
   periodRef: z.string().regex(/^\d{4}-\d{2}$/, 'Formato: AAAA-MM'),
 })
