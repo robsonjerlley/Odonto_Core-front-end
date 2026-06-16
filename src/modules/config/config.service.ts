@@ -34,10 +34,10 @@ export const configService = {
   registerAdsInvestment: (dto: AdsInvestmentDTO) =>
     api.post('/api/v1/config/ads-investment', dto).then((r) => r.data),
 
-  // GET — leitura das configurações vigentes (§7.7). getRecycleConfig retorna
-  // 404 quando ainda não há config ativa cadastrada.
+  // GET — leitura das configurações vigentes (§7.7). Retorna null quando não há
+  // config ativa cadastrada (200 + null body, conforme ADR v1.7/bug #18).
   getRecycleConfig: () =>
-    api.get<RecycleConfigResponse>('/api/v1/config/recycle').then((r) => r.data),
+    api.get<RecycleConfigResponse | null>('/api/v1/config/recycle').then((r) => r.data),
 
   getBonusConfigs: (sector: Sector) =>
     api.get<BonusConfigResponse[]>('/api/v1/config/bonus', { params: { sector } }).then((r) => r.data),

@@ -75,6 +75,7 @@ export interface ContactLog {
     id: string
     ticketId: string
     userId: string
+    username: string | null  // ADR-019 — nome do autor gravado na criação; null em logs anteriores à v1.7
     channel: ContactChannel
     note: string
     statusBefore?: TicketStatus   // só em logs de mudança de status

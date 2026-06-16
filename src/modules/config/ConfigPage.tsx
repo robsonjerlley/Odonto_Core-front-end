@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import axios from 'axios'
 import { z } from 'zod'
 import { Sector, Role, AdsChannel } from '@/types/enums'
 import { SECTOR_LABELS, ROLE_LABELS, ADS_CHANNEL_LABELS } from '@/lib/labels'
@@ -26,17 +25,10 @@ function RecycleConfigCard() {
   const [success, setSuccess] = useState(false)
   const qc = useQueryClient()
 
-  // Config vigente — 404 significa "nenhuma config ativa ainda" (não é erro).
+  // Backend retorna 200 + null quando nenhuma config ativa existe (ADR v1.7/bug #18).
   const { data: current } = useQuery({
     queryKey: ['config-recycle'],
-    queryFn: async () => {
-      try {
-        return await configService.getRecycleConfig()
-      } catch (err) {
-        if (axios.isAxiosError(err) && err.response?.status === 404) return null
-        throw err
-      }
-    },
+    queryFn: () => configService.getRecycleConfig(),
     retry: false,
   })
 
@@ -114,7 +106,20 @@ const bonusSchema = z.object({
   role: z.enum(Object.values(Role) as [Role, ...Role[]]),
   metricKey: z.string().min(1, 'Informe a métrica'),
   bonusPct: z.coerce.number().min(0.01, 'Mínimo 0,01%').max(100, 'Máximo 100%'),
-  targetValue: z.coerce.number().positive().optional(),
+  // Aceita formato BR ("100.000,00") e numérico puro ("100000").
+  targetValue: z.preprocess(
+    (v) => {
+      if (v === '' || v == null) return undefined
+      const s = String(v).trim()
+      if (!s) return undefined
+      const normalized = s.includes(',')
+        ? s.replace(/\./g, '').replace(',', '.')
+        : s
+      const n = parseFloat(normalized)
+      return Number.isNaN(n) ? v : n
+    },
+    z.number({ invalid_type_error: 'Informe um número válido' }).positive('Valor deve ser positivo').optional(),
+  ),
   periodRef: z.string().regex(/^\d{4}-\d{2}$/, 'Formato: AAAA-MM'),
 })
 type BonusFormInput = z.input<typeof bonusSchema>
@@ -235,7 +240,13 @@ function BonusConfigCard() {
                 <FormItem>
                   <FormLabel>Meta (opcional)</FormLabel>
                   <FormControl>
-                    <Input type="number" min={0} step={0.01} placeholder="Valor alvo" {...field} value={(field.value as string | number | undefined) ?? ''} />
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Ex: 100.000,00"
+                      {...field}
+                      value={field.value != null ? String(field.value) : ''}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

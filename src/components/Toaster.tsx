@@ -11,7 +11,7 @@ export default function Toaster() {
   const dismiss = useToastStore((s) => s.dismiss)
 
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm">
+    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-sm">
       {toasts.map((t) => (
         <div
           key={t.id}

@@ -231,6 +231,11 @@ function CloseDealDialog({ deal, ticketId, open, onOpenChange, onClosed }: Close
                       ))}
                     </SelectContent>
                   </Select>
+                  {!isInstallment && (
+                    <p className="text-xs text-muted-foreground">
+                      Selecione "Parcelado" para informar o número de parcelas.
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

@@ -46,6 +46,7 @@ export default function CreateCustomerDialog({ open, onOpenChange }: CreateCusto
   }
 
   async function onSubmit(data: CustomerFormData) {
+    form.clearErrors('root')
     try {
       const payload = {
         ...data,
@@ -60,8 +61,14 @@ export default function CreateCustomerDialog({ open, onOpenChange }: CreateCusto
       await createCustomer.mutateAsync(payload)
       form.reset(DEFAULT_VALUES)
       onOpenChange(false)
-    } catch {
-      // erro tratado pelo estado isPending/isError da mutation
+    } catch (err) {
+      const response = (err as { response?: { data?: { message?: string }; status?: number } })?.response
+      const msg = response?.data?.message
+      if (response?.status === 409 && msg?.toLowerCase().includes('cpf')) {
+        form.setError('cpf', { message: msg })
+      } else {
+        form.setError('root', { message: msg ?? 'Erro ao criar cliente. Verifique os dados.' })
+      }
     }
   }
 
@@ -189,9 +196,9 @@ export default function CreateCustomerDialog({ open, onOpenChange }: CreateCusto
               )}
             </div>
 
-            {createCustomer.isError && (
+            {form.formState.errors.root && (
               <p className="text-sm text-destructive">
-                Erro ao criar cliente. Verifique os dados e tente novamente.
+                {form.formState.errors.root.message}
               </p>
             )}
 

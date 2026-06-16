@@ -28,6 +28,7 @@ import {
   SECTOR_LABELS, TICKET_STATUS_LABELS, TICKET_STATUS_COLOR,
   CONTACT_CHANNEL_LABELS,
 } from '@/lib/labels'
+import { toast } from '@/lib/toast'
 
 // ─── Configuração visual por transição (destino) ──────────────────────────────
 
@@ -87,6 +88,17 @@ const ACTION_CFG: Partial<Record<TicketStatus, ActionCfg>> = {
 // Destinos que abrem um formulário inline em vez de agir direto
 const NEEDS_SCHEDULE: TicketStatus[] = [TicketStatus.SCHEDULED]
 const NEEDS_LOSS_REASON: TicketStatus[] = [TicketStatus.LOSS]
+
+const STATUS_SUCCESS_LABELS: Partial<Record<TicketStatus, string>> = {
+  [TicketStatus.IN_CONTACT]:    'Contato iniciado.',
+  [TicketStatus.SCHEDULED]:     'Consulta agendada com sucesso.',
+  [TicketStatus.IN_EVALUATION]: 'Avaliação iniciada.',
+  [TicketStatus.NEGOTIATION]:   'Encaminhado para negociação.',
+  [TicketStatus.WIN]:           'Fechado como ganho.',
+  [TicketStatus.PENDING]:       'Colocado em espera.',
+  [TicketStatus.POST_PROCEDURE]:'Procedimento registrado.',
+  [TicketStatus.LOSS]:          'Marcado como não convertido.',
+}
 
 // ─── Seção de orçamento (avaliador) ──────────────────────────────────────────
 
@@ -189,6 +201,7 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
   const [lossReason, setLossReason] = useState('')
   const [cpfInput, setCpfInput] = useState('')
   const [cpfStep, setCpfStep] = useState(false) // true = pedir CPF antes de mostrar o date picker
+  const [cpfError, setCpfError] = useState<string | null>(null)
 
   const { data: logs = [] } = useContactLogs(ticket?.id ?? '')
   const changeStatus = useChangeTicketStatus()
@@ -208,6 +221,7 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
     setLossReason('')
     setCpfInput('')
     setCpfStep(false)
+    setCpfError(null)
   }
 
   function markStatus(status: TicketStatus, opts?: { lossReason?: string; returnScheduledAt?: string }) {
@@ -218,6 +232,7 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
         onSuccess: () => {
           closeForm()
           onOpenChange(false)
+          toast(STATUS_SUCCESS_LABELS[status] ?? 'Status atualizado.', 'success')
         },
       },
     )
@@ -243,6 +258,7 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
 
   async function saveCpfAndProceed() {
     if (!customer || !cpfInput.trim()) return
+    setCpfError(null)
     try {
       await updateCustomer.mutateAsync({
         id: customer.id,
@@ -254,8 +270,9 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
       })
       setCpfStep(false)
       setCpfInput('')
-    } catch {
-      /* erro exibido via toast pelo interceptor */
+    } catch (err) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setCpfError(msg ?? 'Erro ao salvar CPF. Verifique o formato (11 dígitos).')
     }
   }
 
@@ -341,8 +358,11 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
                       <Input
                         placeholder="000.000.000-00"
                         value={cpfInput}
-                        onChange={(e) => setCpfInput(e.target.value)}
+                        onChange={(e) => { setCpfInput(e.target.value); setCpfError(null) }}
                       />
+                      {cpfError && (
+                        <p className="text-sm text-destructive">{cpfError}</p>
+                      )}
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" size="sm" onClick={closeForm}>
                           Cancelar
@@ -484,6 +504,12 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
                               {format(new Date(log.occurredAt), "dd/MM/yyyy 'às' HH:mm", {
                                 locale: ptBR,
                               })}
+                              {log.username && (
+                                <>
+                                  {' · '}
+                                  <span className="font-medium">{log.username}</span>
+                                </>
+                              )}
                               {log.channel !== 'OTHER' && (
                                 <>
                                   {' · '}
