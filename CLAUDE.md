@@ -501,10 +501,9 @@ Registradas em `docs/demandas-2026-06-14.md` (IDs `D-01`…`D-14`). **Quase toda
 - Analytics scope: GLOBAL/SECTOR/OWN implementados; `/analytics-setor` e `/meu-desempenho` por papel
 - D-03 ROI: resolvido pela ADR-017 (range livre de 30 dias no dashboard)
 
-**Pendentes:**
-- **D-12** 🟨 REPRO — `USER_ATTENDANT` 403 na performance — reproduzir em runtime; pode ser correção no backend
+**Todas as 14 demandas resolvidas ✅** — ver `docs/demandas-2026-06-14.md` para detalhes.
 
-**D-05 ✅ resolvido no backend (fix H1, 2026-06-15):** `scheduledCount` em `getConversionByStage` corrigido para contar por status (não por `scheduledAt != null`) — porcentagens agora ≤ 100% por construção. Nenhuma mudança no frontend.
+Últimas fechadas (2026-06-15): D-05 (fix H1 backend — conversão >100%); D-12 (403 era B4, já corrigido no backend — confirmado em runtime; métricas N4 ocultas no front).
 
 ## Arquivos-chave do backend para consulta
 
