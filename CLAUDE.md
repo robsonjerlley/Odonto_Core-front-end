@@ -67,13 +67,14 @@ enum CustomerSource { ADS_PAID, ORGANIC, INDICATION }
 
 > **⚠ FONTE DA VERDADE:** o contrato oficial de integração está em
 > `B:\projects\odontocore.crm.frontend\frontend-integration-contract.md`
-> (v1.6, 2026-06-15 — sincronizado com `B:\projects\odontocore.crm\odontocore.crm\.claude\specs\frontend-integration-contract.md`).
+> (v1.9, 2026-06-17 — sincronizado com `B:\projects\odontocore.crm\odontocore.crm\.claude\specs\frontend-integration-contract.md`).
 > Ele descreve endpoints, DTOs, enums, modelo de erro, RBAC,
 > máquina de estados, paginação `Page<T>`, refresh token e traz um apêndice
 > TypeScript pronto. O bloco abaixo é histórico e **defasado** — em caso
 > de divergência, **o contrato vence**. O frontend foi alinhado ao v1.2 em 2026-06-08;
-> **a migração analytics v1.4/v1.5 (ADR-015 + ADR-016) foi concluída em 2026-06-14 e
-> a ADR-017 (dashboard range livre) foi concluída em 2026-06-15 — ver "Migração analytics" abaixo.**
+> **a migração analytics v1.4/v1.5 (ADR-015 + ADR-016) foi concluída em 2026-06-14;
+> ADR-017 (dashboard range livre) em 2026-06-15; ADR-018/ADR-019/bugs em 2026-06-16;
+> ADR-020 (fix GET /config/recycle 500) em 2026-06-17 — ver seções abaixo.**
 > Análise completa de divergências (v1.2) em `docs/analise-contrato-v1.2.md`.
 
 **Base URL:** `http://localhost:8080` (dev local)
@@ -458,6 +459,36 @@ desacoplou `computePerformance()` (sem bônus) de `getUserPerformance()`. `topPe
 
 **Escopo SECTOR (ADR-015/B-001, 2026-06-15):** tela `/analytics-setor` (`SectorAnalyticsPage`) criada
 para ADMs de setor. `analyticsScope` agora tem 3 valores: GLOBAL, SECTOR, OWN.
+
+### Correções v1.7/v1.8 (ADR-018 + ADR-019 + bug #18 + L4) ✅ CONCLUÍDAS (2026-06-16)
+
+**ADR-018 (v1.7, 2026-06-16):** `GET /customers` passou a excluir clientes anonimizados por default
+via `CustomerSpecifications.notAnonymized()` no SQL. Frontend: sem alteração de código — a página já
+chegava filtrada; remover qualquer `filter(c => !c.anonymized)` client-side se existir.
+
+**ADR-019 (v1.7, 2026-06-16):** `ContactLogResponseDTO` ganhou campo `username: string | null` —
+snapshot do nome do autor gravado imutavelmente na criação. Logs anteriores chegam com `null`.
+Frontend: campo adicionado em `src/types/models.ts`; `TicketDetailSheet` já exibe `username` diretamente
+(sem lookup `GET /users/{id}` por linha de log); `null` mostra "Sistema" ou o `userId`.
+
+**Bug #18 (v1.7, 2026-06-16):** `GET /api/v1/config/recycle` retornava **404** quando nenhuma config
+existia (usava `orElseThrow`). Corrigido no backend para `200 + null`. Frontend: tratamento de 404
+removido; `RecycleConfigCard` já tratava falsy como "sem config".
+
+**L4 (v1.8, 2026-06-16):** `USER_COMMERCIAL TICKET:READ` corrigido de scope `OWN` → `SECTOR` no
+`PermissionSeeder`. Vendedor agora enxerga todos os tickets do setor COMMERCIAL. Frontend: `permissions.ts`
+não usa escopos — sem alteração; o backend já entrega a lista recortada corretamente.
+
+### ADR-020 — GET /config/recycle retornava 500 (v1.9) ✅ RESOLVIDO (2026-06-17)
+
+`GET /api/v1/config/recycle` retornava **500** porque o `@GetMapping("/recycle")` nunca foi adicionado
+ao `ConfigController` — o service `getRecycle()` existia, mas sem handler o Spring caía no
+`GlobalExceptionHandler` genérico. Endpoint adicionado com `ResponseEntity<RecycleConfigResponseDTO>`
+e `orElse(null)`. Comportamento final: `200 + body` (config existe) ou `200 + null` (sem config).
+
+Frontend: removido `retry: false` do `useQuery` em `RecycleConfigCard` (`ConfigPage.tsx`) — estava
+lá como workaround do 500 para evitar loop de retries. A lógica de `null` como "sem config" já
+estava correta e não precisou de alteração.
 
 ### Nota sobre escopos no PermissionSeeder vs contrato §8
 
