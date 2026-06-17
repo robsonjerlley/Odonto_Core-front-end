@@ -283,8 +283,8 @@ const adsSchema = z.object({
   channel: z.enum(Object.values(AdsChannel) as [AdsChannel, ...AdsChannel[]]),
   campaign: z.string().optional(),
   amount: z.coerce.number().positive('Valor deve ser positivo'),
-  periodStart: z.string().min(1, 'Informe a data inicial'),
-  periodEnd: z.string().min(1, 'Informe a data final'),
+  periodStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida (use AAAA-MM-DD)'),
+  periodEnd: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida (use AAAA-MM-DD)'),
 })
 type AdsFormInput = z.input<typeof adsSchema>
 type AdsForm = z.output<typeof adsSchema>
@@ -376,7 +376,7 @@ function AdsInvestmentCard() {
                 <FormItem>
                   <FormLabel>Data inicial</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="date" min="2000-01-01" max="2099-12-31" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -386,7 +386,7 @@ function AdsInvestmentCard() {
                 <FormItem>
                   <FormLabel>Data final</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="date" min="2000-01-01" max="2099-12-31" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

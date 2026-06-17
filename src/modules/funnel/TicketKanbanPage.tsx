@@ -46,8 +46,14 @@ export default function TicketKanbanPage() {
     (status) => ({ status, label: TICKET_STATUS_LABELS[status] }),
   )
 
-  const [selectedTicket, setSelectedTicket] = useState<LeadTicket | null>(null)
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+
+  // Derivado do array reativo: quando o TanStack Query refetch atualiza `tickets`,
+  // o sheet exibe automaticamente os dados mais recentes (status, campos, etc.)
+  const selectedTicket = selectedTicketId
+    ? (tickets.find((t) => t.id === selectedTicketId) ?? null)
+    : null
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -75,7 +81,7 @@ export default function TicketKanbanPage() {
   }
 
   function handleCardClick(ticket: LeadTicket) {
-    setSelectedTicket(ticket)
+    setSelectedTicketId(ticket.id)
     setSheetOpen(true)
   }
 

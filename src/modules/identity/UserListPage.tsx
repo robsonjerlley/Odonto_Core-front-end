@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { useUsers, useRemoveUser } from './users.queries'
 import { Sector, Role } from '@/types/enums'
-import { SECTOR_LABELS, ROLE_LABELS } from '@/lib/labels'
+import { SECTOR_LABELS, ROLE_LABELS, SECTOR_BADGE_COLOR } from '@/lib/labels'
 import type { User } from '@/types/models'
 import RoleGuard from '@/modules/auth/RoleGuard'
 import CreateUserDialog from './CreateUserDialog'
@@ -123,7 +123,7 @@ function UserRow({ user, onDelete, onChangePassword }: UserRowProps) {
     <TableRow>
       <TableCell>{user.name}</TableCell>
       <TableCell className="text-muted-foreground">{user.username}</TableCell>
-      <TableCell><Badge variant="outline">{SECTOR_LABELS[user.sector]}</Badge></TableCell>
+      <TableCell><Badge variant="outline" className={SECTOR_BADGE_COLOR[user.sector]}>{SECTOR_LABELS[user.sector]}</Badge></TableCell>
       <TableCell><Badge>{ROLE_LABELS[user.role]}</Badge></TableCell>
       <TableCell className="text-right space-x-2">
         <Button variant="outline" size="sm" onClick={onChangePassword}>

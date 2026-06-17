@@ -65,11 +65,11 @@ export default function LoginPage() {
     }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 p-4 gap-4">
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="space-y-3">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-brand text-brand-foreground text-lg font-bold">
-            O
+          <div className="flex size-11 items-center justify-center rounded-xl bg-brand text-brand-foreground text-sm font-black tracking-tighter leading-none">
+            OC
           </div>
           <div className="space-y-1">
             <CardTitle className="text-xl tracking-tight">OdontoCore CRM</CardTitle>
@@ -118,9 +118,8 @@ export default function LoginPage() {
           </Form>
         </CardContent>
       </Card>
+      <p className="text-xs text-muted-foreground/70">Desenvolvido por SertãoBit</p>
     </div>
   )
-    
-
 }
 

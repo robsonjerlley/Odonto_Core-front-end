@@ -65,13 +65,13 @@ export default function SectorAnalyticsPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { label: 'Captados', value: conversion.captureCount },
-                  { label: 'Agendados', value: conversion.scheduledCount },
-                  { label: 'Com orçamento', value: conversion.dealCreatedCount },
-                  { label: 'Fechados', value: conversion.closedCount },
+                  { label: 'Captados',      value: conversion.captureCount,     accent: 'text-sky-700 dark:text-sky-400' },
+                  { label: 'Agendados',     value: conversion.scheduledCount,   accent: 'text-amber-700 dark:text-amber-400' },
+                  { label: 'Com orçamento', value: conversion.dealCreatedCount, accent: 'text-teal-700 dark:text-teal-400' },
+                  { label: 'Fechados',      value: conversion.closedCount,      accent: 'text-emerald-700 dark:text-emerald-400' },
                 ].map((item) => (
                   <div key={item.label} className="rounded-lg bg-muted/40 p-3 text-center">
-                    <p className="text-2xl font-bold">{item.value}</p>
+                    <p className={`text-2xl font-bold ${item.accent}`}>{item.value}</p>
                     <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
                   </div>
                 ))}
@@ -79,15 +79,15 @@ export default function SectorAnalyticsPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                 <div className="flex justify-between border rounded-md p-2">
                   <span className="text-muted-foreground">Leads → Agenda</span>
-                  <span className="font-medium">{pct(conversion.leadsConversionPct)}</span>
+                  <span className="font-medium text-teal-700 dark:text-teal-400">{pct(conversion.leadsConversionPct)}</span>
                 </div>
                 <div className="flex justify-between border rounded-md p-2">
                   <span className="text-muted-foreground">Agenda → Orçamento</span>
-                  <span className="font-medium">{pct(conversion.evaluationConversionPct)}</span>
+                  <span className="font-medium text-teal-700 dark:text-teal-400">{pct(conversion.evaluationConversionPct)}</span>
                 </div>
                 <div className="flex justify-between border rounded-md p-2">
                   <span className="text-muted-foreground">Orçamento → Fechado</span>
-                  <span className="font-medium">{pct(conversion.commercialConversionPct)}</span>
+                  <span className="font-medium text-teal-700 dark:text-teal-400">{pct(conversion.commercialConversionPct)}</span>
                 </div>
               </div>
             </div>
@@ -108,13 +108,13 @@ export default function SectorAnalyticsPage() {
           {dropOff && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                { label: 'Entradas', value: String(dropOff.entryCount) },
-                { label: 'Saídas', value: String(dropOff.exitCount) },
-                { label: 'Perdas', value: String(dropOff.lossCount) },
-                { label: 'Drop-off', value: pct(dropOff.dropOffPct) },
+                { label: 'Entradas', value: String(dropOff.entryCount),   accent: 'text-sky-700 dark:text-sky-400' },
+                { label: 'Saídas',   value: String(dropOff.exitCount),    accent: '' },
+                { label: 'Perdas',   value: String(dropOff.lossCount),    accent: 'text-destructive' },
+                { label: 'Drop-off', value: pct(dropOff.dropOffPct),      accent: 'text-destructive' },
               ].map((item) => (
                 <div key={item.label} className="rounded-lg bg-muted/40 p-3 text-center">
-                  <p className="text-2xl font-bold">{item.value}</p>
+                  <p className={`text-2xl font-bold ${item.accent}`}>{item.value}</p>
                   <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
                 </div>
               ))}
@@ -134,14 +134,14 @@ export default function SectorAnalyticsPage() {
             <>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {[
-                  { label: 'Atribuídos', value: String(perf.totalAssigned) },
-                  { label: 'Convertidos', value: String(perf.totalConverted) },
-                  { label: 'Conversão', value: pct(perf.conversionPct) },
-                  { label: 'Ticket médio', value: currency(perf.avgTicketValue) },
-                  { label: 'Caixa esperado', value: currency(perf.expectedCash) },
+                  { label: 'Atribuídos',    value: String(perf.totalAssigned),       accent: '' },
+                  { label: 'Convertidos',   value: String(perf.totalConverted),      accent: 'text-emerald-700 dark:text-emerald-400' },
+                  { label: 'Conversão',     value: pct(perf.conversionPct),          accent: 'text-teal-700 dark:text-teal-400' },
+                  { label: 'Ticket médio',  value: currency(perf.avgTicketValue),    accent: 'text-teal-700 dark:text-teal-400' },
+                  { label: 'Caixa esperado',value: currency(perf.expectedCash),      accent: 'text-teal-700 dark:text-teal-400' },
                 ].map((item) => (
                   <div key={item.label} className="rounded-lg bg-muted/40 p-3">
-                    <p className="text-lg font-bold">{item.value}</p>
+                    <p className={`text-lg font-bold ${item.accent}`}>{item.value}</p>
                     <p className="text-xs text-muted-foreground">{item.label}</p>
                   </div>
                 ))}
@@ -150,7 +150,7 @@ export default function SectorAnalyticsPage() {
                 <span className="text-sm text-muted-foreground">
                   Bônus de {formatMonthLabel(perf.bonusPeriodRef)}
                 </span>
-                <span className="font-bold text-lg">{currency(perf.calculatedBonus)}</span>
+                <span className="font-bold text-lg text-emerald-700 dark:text-emerald-400">{currency(perf.calculatedBonus)}</span>
               </div>
             </>
           )}

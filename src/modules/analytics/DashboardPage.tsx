@@ -6,7 +6,7 @@ import {
 import { useDashboard, useConversion } from './analytics.queries'
 import { DateRangeFilter } from './DateRangeFilter'
 import { defaultPeriod } from './period'
-import { SECTOR_LABELS, ADS_CHANNEL_LABELS } from '@/lib/labels'
+import { SECTOR_LABELS, ADS_CHANNEL_LABELS, SECTOR_BADGE_COLOR } from '@/lib/labels'
 import { Sector } from '@/types/enums'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -18,7 +18,7 @@ import type { AnalyticsPeriod } from './analytics.service'
 // ─── paleta dos gráficos (alinhada aos tokens de marca) ───────────────────────
 const CHART = {
   brand: '#0d9488',   // teal — receita / positivo
-  neutral: '#94a3b8', // slate — investimento / base
+  neutral: '#6366f1', // indigo — investimento / base
   danger: '#f43f5e',  // rose — drop-off / perdas
 }
 
@@ -127,13 +127,13 @@ function ConversionCard({ period }: { period: AnalyticsPeriod }) {
           <div className="space-y-4">
             <div className="grid grid-cols-4 gap-3">
               {[
-                { label: 'Captados', value: data.captureCount },
-                { label: 'Agendados', value: data.scheduledCount },
-                { label: 'Com orçamento', value: data.dealCreatedCount },
-                { label: 'Fechados', value: data.closedCount },
+                { label: 'Captados',      value: data.captureCount,     accent: 'text-sky-700 dark:text-sky-400' },
+                { label: 'Agendados',     value: data.scheduledCount,   accent: 'text-amber-700 dark:text-amber-400' },
+                { label: 'Com orçamento', value: data.dealCreatedCount, accent: 'text-teal-700 dark:text-teal-400' },
+                { label: 'Fechados',      value: data.closedCount,      accent: 'text-emerald-700 dark:text-emerald-400' },
               ].map((item) => (
                 <div key={item.label} className="rounded-lg bg-muted/40 p-3 text-center">
-                  <p className="text-2xl font-bold">{item.value}</p>
+                  <p className={`text-2xl font-bold ${item.accent}`}>{item.value}</p>
                   <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
                 </div>
               ))}
@@ -141,15 +141,15 @@ function ConversionCard({ period }: { period: AnalyticsPeriod }) {
             <div className="grid grid-cols-3 gap-3 text-sm">
               <div className="flex justify-between border rounded-md p-2">
                 <span className="text-muted-foreground">Leads → Agenda</span>
-                <span className="font-medium">{pct(data.leadsConversionPct)}</span>
+                <span className="font-medium text-teal-700 dark:text-teal-400">{pct(data.leadsConversionPct)}</span>
               </div>
               <div className="flex justify-between border rounded-md p-2">
                 <span className="text-muted-foreground">Agenda → Orçamento</span>
-                <span className="font-medium">{pct(data.evaluationConversionPct)}</span>
+                <span className="font-medium text-teal-700 dark:text-teal-400">{pct(data.evaluationConversionPct)}</span>
               </div>
               <div className="flex justify-between border rounded-md p-2">
                 <span className="text-muted-foreground">Orçamento → Fechado</span>
-                <span className="font-medium">{pct(data.commercialConversionPct)}</span>
+                <span className="font-medium text-teal-700 dark:text-teal-400">{pct(data.commercialConversionPct)}</span>
               </div>
             </div>
           </div>
@@ -230,7 +230,7 @@ function TopPerformersTable({ performers }: { performers: UserPerformanceResultD
               <tr key={p.userId} className="border-t hover:bg-muted/20 transition-colors">
                 <td className="p-3 font-medium">{p.name}</td>
                 <td className="p-3">
-                  <Badge variant="outline">{SECTOR_LABELS[p.sector]}</Badge>
+                  <Badge variant="outline" className={SECTOR_BADGE_COLOR[p.sector]}>{SECTOR_LABELS[p.sector]}</Badge>
                 </td>
                 <td className="p-3 text-right">{p.totalAssigned}</td>
                 <td className="p-3 text-right">{p.totalConverted}</td>
@@ -260,12 +260,12 @@ function TopPerformersTable({ performers }: { performers: UserPerformanceResultD
 
 // ─── KPI card ─────────────────────────────────────────────────────────────────
 
-function KpiCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function KpiCard({ label, value, hint, accent = 'text-foreground' }: { label: string; value: string; hint?: string; accent?: string }) {
   return (
     <Card>
       <CardContent className="p-4">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold tracking-tight mt-1">{value}</p>
+        <p className={`text-2xl font-semibold tracking-tight mt-1 ${accent}`}>{value}</p>
         {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
       </CardContent>
     </Card>
@@ -284,14 +284,14 @@ function PostProcedureCard({ data }: { data: PostProcedureResultDTO }) {
         {data && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {[
-              { label: 'Total', value: String(data.totalPostProcedure) },
-              { label: 'Retornaram', value: String(data.returnedCount) },
-              { label: 'Em aberto', value: String(data.pendingCount) },
-              { label: 'Perdidos', value: String(data.lostCount) },
-              { label: 'Taxa de retorno', value: pct(data.returnRate) },
+              { label: 'Total',           value: String(data.totalPostProcedure), accent: '' },
+              { label: 'Retornaram',      value: String(data.returnedCount),      accent: 'text-emerald-700 dark:text-emerald-400' },
+              { label: 'Em aberto',       value: String(data.pendingCount),       accent: 'text-amber-700 dark:text-amber-400' },
+              { label: 'Perdidos',        value: String(data.lostCount),          accent: 'text-destructive' },
+              { label: 'Taxa de retorno', value: pct(data.returnRate),            accent: 'text-teal-700 dark:text-teal-400' },
             ].map((item) => (
               <div key={item.label} className="rounded-lg bg-muted/40 p-3 text-center">
-                <p className="text-xl font-bold">{item.value}</p>
+                <p className={`text-xl font-bold ${item.accent}`}>{item.value}</p>
                 <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
               </div>
             ))}
@@ -331,21 +331,25 @@ export default function DashboardPage() {
               label="Caixa esperado"
               value={currency(dashboard.totalExpectedCash)}
               hint="Receita líquida estimada (após taxas)"
+              accent="text-teal-700 dark:text-teal-400"
             />
             <KpiCard
               label="Fechamentos"
               value={String(dashboard.stageConversion?.closedCount ?? 0)}
               hint="Negócios ganhos no período"
+              accent="text-emerald-700 dark:text-emerald-400"
             />
             <KpiCard
               label="Captados"
               value={String(dashboard.stageConversion?.captureCount ?? 0)}
               hint="Leads que entraram no funil"
+              accent="text-sky-700 dark:text-sky-400"
             />
             <KpiCard
               label="Canais de Ads"
               value={String(dashboard.adsRoi?.length ?? 0)}
               hint="Canais com investimento no período"
+              accent="text-indigo-700 dark:text-indigo-400"
             />
           </div>
 

@@ -19,7 +19,8 @@ interface SectionCard {
   title: string
   description: string
   show: (role: Role | undefined | null) => boolean
-  accent?: string
+  accent: string
+  iconBg: string
 }
 
 const SECTION_CARDS: SectionCard[] = [
@@ -29,7 +30,8 @@ const SECTION_CARDS: SectionCard[] = [
     title: 'Analytics',
     description: 'Dashboard global, ROI de campanhas e desempenho da clínica.',
     show: (r) => canAccessRoute(r, '/analytics'),
-    accent: 'text-brand',
+    accent: 'text-teal-700 dark:text-teal-400',
+    iconBg: 'bg-teal-100 dark:bg-teal-950/50',
   },
   {
     to: '/analytics-setor',
@@ -37,7 +39,8 @@ const SECTION_CARDS: SectionCard[] = [
     title: 'Analytics do Setor',
     description: 'Conversão e drop-off do seu setor, mais seu desempenho pessoal.',
     show: (r) => analyticsScope(r) === 'SECTOR',
-    accent: 'text-brand',
+    accent: 'text-teal-700 dark:text-teal-400',
+    iconBg: 'bg-teal-100 dark:bg-teal-950/50',
   },
   {
     to: '/funnel',
@@ -45,7 +48,8 @@ const SECTION_CARDS: SectionCard[] = [
     title: 'Pipeline',
     description: 'Gerencie tickets de leads, registre contatos e avance no funil.',
     show: (r) => canAccessRoute(r, '/funnel'),
-    accent: 'text-sky-600',
+    accent: 'text-blue-700 dark:text-blue-400',
+    iconBg: 'bg-blue-100 dark:bg-blue-950/50',
   },
   {
     to: '/customers',
@@ -53,7 +57,8 @@ const SECTION_CARDS: SectionCard[] = [
     title: 'Pacientes',
     description: 'Cadastro de clientes, histórico e dados de captação.',
     show: (r) => canAccessRoute(r, '/customers'),
-    accent: 'text-violet-600',
+    accent: 'text-violet-600 dark:text-violet-400',
+    iconBg: 'bg-violet-100 dark:bg-violet-950/50',
   },
   {
     to: '/avaliacoes',
@@ -61,7 +66,8 @@ const SECTION_CARDS: SectionCard[] = [
     title: 'Avaliações',
     description: 'Pacientes agendados e em avaliação. Crie orçamentos e encaminhe para negociação.',
     show: (r) => canAccessRoute(r, '/avaliacoes'),
-    accent: 'text-teal-600',
+    accent: 'text-orange-700 dark:text-orange-400',
+    iconBg: 'bg-orange-100 dark:bg-orange-950/50',
   },
   {
     to: '/commercial',
@@ -69,7 +75,8 @@ const SECTION_CARDS: SectionCard[] = [
     title: 'Negociações',
     description: 'Deals ativos, descontos, fechamento e histórico de propostas.',
     show: (r) => canAccessRoute(r, '/commercial'),
-    accent: 'text-emerald-600',
+    accent: 'text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-emerald-100 dark:bg-emerald-950/50',
   },
   {
     to: '/meu-desempenho',
@@ -77,7 +84,8 @@ const SECTION_CARDS: SectionCard[] = [
     title: 'Meu Desempenho',
     description: 'Suas métricas pessoais de atendimento e bônus do período.',
     show: (r) => analyticsScope(r) === 'OWN',
-    accent: 'text-amber-600',
+    accent: 'text-amber-600 dark:text-amber-400',
+    iconBg: 'bg-amber-100 dark:bg-amber-950/50',
   },
   {
     to: '/users',
@@ -85,7 +93,8 @@ const SECTION_CARDS: SectionCard[] = [
     title: 'Equipe',
     description: 'Gerenciamento de usuários, papéis e setores.',
     show: (r) => canAccessRoute(r, '/users'),
-    accent: 'text-slate-600',
+    accent: 'text-slate-600 dark:text-slate-400',
+    iconBg: 'bg-slate-100 dark:bg-slate-800/50',
   },
   {
     to: '/config',
@@ -93,7 +102,8 @@ const SECTION_CARDS: SectionCard[] = [
     title: 'Configurações',
     description: 'Reciclagem de leads, bônus e investimentos em ADS.',
     show: (r) => canAccessRoute(r, '/config'),
-    accent: 'text-slate-600',
+    accent: 'text-indigo-600 dark:text-indigo-400',
+    iconBg: 'bg-indigo-100 dark:bg-indigo-950/50',
   },
 ]
 
@@ -119,7 +129,7 @@ function SectionCardItem({ card }: { card: SectionCard }) {
       to={card.to}
       className="group flex flex-col gap-3 rounded-xl border bg-card p-5 hover:bg-muted/40 hover:border-brand/40 transition-all duration-150"
     >
-      <div className={`flex size-10 items-center justify-center rounded-lg bg-muted ${card.accent ?? 'text-foreground'}`}>
+      <div className={`flex size-10 items-center justify-center rounded-lg ${card.iconBg} ${card.accent}`}>
         <Icon className="size-5" />
       </div>
       <div className="flex-1 space-y-1">

@@ -23,8 +23,8 @@ export default function MyPerformancePage() {
   // Convertidos e Bônus apurado — Conversão, Ticket médio e Caixa esperado ficam
   // restritos às visões de setor/global (ADMs).
   const metrics = [
-    { label: 'Atribuídos', value: perf ? String(perf.totalAssigned) : '—' },
-    { label: 'Convertidos', value: perf ? String(perf.totalConverted) : '—' },
+    { label: 'Atribuídos', value: perf ? String(perf.totalAssigned) : '—', accent: '' },
+    { label: 'Convertidos', value: perf ? String(perf.totalConverted) : '—', accent: 'text-emerald-700 dark:text-emerald-400' },
   ]
 
   return (
@@ -52,7 +52,7 @@ export default function MyPerformancePage() {
           <Card key={m.label}>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">{m.label}</p>
-              <p className="text-2xl font-semibold tracking-tight mt-1">{m.value}</p>
+              <p className={`text-2xl font-semibold tracking-tight mt-1 ${m.accent}`}>{m.value}</p>
             </CardContent>
           </Card>
         ))}
@@ -67,7 +67,7 @@ export default function MyPerformancePage() {
             <span className="text-sm text-muted-foreground">
               {perf ? `Bônus de ${formatMonthLabel(perf.bonusPeriodRef)}` : 'Bônus do mês'}
             </span>
-            <span className="font-bold text-lg">
+            <span className="font-bold text-lg text-emerald-700 dark:text-emerald-400">
               {currency(perf?.calculatedBonus)}
             </span>
           </div>

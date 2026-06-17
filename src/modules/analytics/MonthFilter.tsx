@@ -13,6 +13,8 @@ interface MonthFilterProps {
 export function MonthFilter({ month, onApply }: MonthFilterProps) {
   const [value, setValue] = useState(month)
 
+  const isValid = value.length >= 7 && value.split('-')[0].length === 4
+
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <label className="sr-only" htmlFor="period-month">Mês de referência</label>
@@ -21,9 +23,16 @@ export function MonthFilter({ month, onApply }: MonthFilterProps) {
         type="month"
         className="border rounded-md px-3 py-1.5 text-sm bg-background"
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        min="2000-01"
+        max="2099-12"
+        onChange={(e) => {
+          const val = e.target.value
+          const year = val.split('-')[0]
+          if (year && year.length > 4) return
+          setValue(val)
+        }}
       />
-      <Button size="sm" onClick={() => onApply(value)}>
+      <Button size="sm" onClick={() => onApply(value)} disabled={!isValid}>
         Aplicar
       </Button>
     </div>
