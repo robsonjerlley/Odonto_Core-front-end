@@ -25,11 +25,10 @@ function RecycleConfigCard() {
   const [success, setSuccess] = useState(false)
   const qc = useQueryClient()
 
-  // Backend retorna 200 + null quando nenhuma config ativa existe (ADR v1.7/bug #18).
+  // Retorna 200 + null quando nenhuma config foi cadastrada (ADR-020/M1, v1.9).
   const { data: current } = useQuery({
     queryKey: ['config-recycle'],
     queryFn: () => configService.getRecycleConfig(),
-    retry: false,
   })
 
   const form = useForm<RecycleFormInput, unknown, RecycleForm>({

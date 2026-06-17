@@ -34,8 +34,7 @@ export const configService = {
   registerAdsInvestment: (dto: AdsInvestmentDTO) =>
     api.post('/api/v1/config/ads-investment', dto).then((r) => r.data),
 
-  // GET — leitura das configurações vigentes (§7.7). Retorna null quando não há
-  // config ativa cadastrada (200 + null body, conforme ADR v1.7/bug #18).
+  // GET — leitura da config vigente (§7.7). Retorna 200 + null quando sem config (ADR-020/M1, v1.9).
   getRecycleConfig: () =>
     api.get<RecycleConfigResponse | null>('/api/v1/config/recycle').then((r) => r.data),
 
