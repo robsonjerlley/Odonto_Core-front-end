@@ -4,8 +4,9 @@ import axios from 'axios'
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // 2 minutos — elimina refetch desnecessário ao navegar entre telas
-      staleTime: 2 * 60 * 1000,
+      // 0 = dados imediatamente obsoletos; garante refetch ao montar qualquer observer
+      // e que invalidateQueries sempre dispare o background-refetch com sucesso.
+      staleTime: 0,
       // Não refetch ao focar a janela — evita explosão de requests em background
       refetchOnWindowFocus: false,
       // Erros 4xx são definitivos (acesso negado, não encontrado) — não retentar.

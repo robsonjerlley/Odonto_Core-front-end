@@ -66,7 +66,11 @@ export function useChangeTicketStatus() {
   return useMutation({
     mutationFn: ({ id, status, lossReason, returnScheduledAt }: ChangeStatusVars) =>
       funnelService.changeTicketStatus(id, { status, lossReason, returnScheduledAt }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: TICKETS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: TICKETS_KEY })
+      // Backend cria log automático em cada transição — invalida todos contact-logs
+      qc.invalidateQueries({ queryKey: ['contact-logs'] })
+    },
   })
 }
 
