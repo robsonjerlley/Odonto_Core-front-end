@@ -9,17 +9,15 @@ export interface DataRangeDTO {
     to: string
 }
 
-// Spring Data Page — formato de resposta paginada do backend
+// Spring Data Page — formato VIA_DTO (spring.data.web.pageable.default-page-size via DTO)
 export interface Page<T> {
     content: T[]
-    totalElements: number
-    totalPages: number
-    number: number
-    size: number
-    first: boolean
-    last: boolean
-    numberOfElements: number
-    empty: boolean
+    page: {
+        size: number
+        number: number
+        totalElements: number
+        totalPages: number
+    }
 }
 
 // Identity
