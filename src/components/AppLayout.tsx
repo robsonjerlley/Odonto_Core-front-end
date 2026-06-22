@@ -3,6 +3,7 @@ import {
   Home, LayoutDashboard, PieChart, Workflow, Users, Handshake,
   UserCog, Settings, LogOut, LineChart, Moon, Sun, Stethoscope, type LucideIcon,
 } from 'lucide-react'
+import { MolarIcon } from '@/components/icons/MolarIcon'
 import { useAuthStore } from '@/store/auth.store'
 import { canAccessRoute, analyticsScope } from '@/lib/permissions'
 import type { Role } from '@/types/enums'
@@ -90,8 +91,8 @@ export default function AppLayout() {
     <div className="flex h-screen bg-background">
       <aside className="flex w-60 flex-col border-r bg-sidebar">
         <div className="flex items-center gap-2 px-4 py-4">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand text-brand-foreground text-xs font-black tracking-tighter leading-none">
-            OC
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand/10">
+            <MolarIcon size={22} />
           </div>
           <div className="min-w-0">
             <p className="font-semibold tracking-tight leading-tight">OdontoCore</p>

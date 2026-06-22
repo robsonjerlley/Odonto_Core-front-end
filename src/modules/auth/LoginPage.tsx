@@ -12,6 +12,7 @@ import { authService } from './auth.service'
 import { usersService } from '@/modules/identity/users.service'
 import type { User } from '@/types/models'
 import { Role } from '@/types/enums'
+import { MolarIcon } from '@/components/icons/MolarIcon'
 
 function getDefaultRoute(user: User): string {
   switch (user.role) {
@@ -68,8 +69,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 p-4 gap-4">
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="space-y-3">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-brand text-brand-foreground text-sm font-black tracking-tighter leading-none">
-            OC
+          <div className="flex size-11 items-center justify-center rounded-xl bg-brand/10">
+            <MolarIcon size={28} />
           </div>
           <div className="space-y-1">
             <CardTitle className="text-xl tracking-tight">OdontoCore CRM</CardTitle>
