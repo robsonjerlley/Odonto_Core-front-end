@@ -7,6 +7,7 @@ import { authService } from '@/modules/auth/auth.service'
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '',
   headers: { 'Content-Type': 'application/json' },
+  timeout: 60000, // 60 seconds for long-running queries
 })
 
 api.interceptors.request.use((config) => {
