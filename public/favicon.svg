@@ -1,26 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#2dd4bf"/>
-      <stop offset="100%" stop-color="#4ade80"/>
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
     </linearGradient>
-    <linearGradient id="hi" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="white" stop-opacity="0.35"/>
-      <stop offset="100%" stop-color="white" stop-opacity="0"/>
-    </linearGradient>
+    <clipPath id="c">
+      <path d="M 8.5 4.3 C 7 3.3, 4.5 3.8, 3.5 6.4 C 2.5 9, 3 12, 3.5 14.5 C 3.8 16.6, 4.6 21, 6.4 21 C 8.2 21, 8.8 17.8, 12 17.4 C 15.2 17.8, 15.8 21, 17.6 21 C 19.4 21, 20.2 16.6, 20.5 14.5 C 21 12, 21.5 9, 20.5 6.4 C 19.5 3.8, 17 3.3, 15.5 4.3 C 14.5 5, 13.5 6.8, 12 6.8 C 10.5 6.8, 9.5 5, 8.5 4.3 Z"/>
+    </clipPath>
   </defs>
   <path
-    d="M 8.5 4.5 C 7 3.5, 4.5 4, 3.5 6.5 C 2.5 9, 3 12, 3.5 14 C 4 17, 6 20.5, 12 20.5 C 18 20.5, 20 17, 20.5 14 C 21 12, 21.5 9, 20.5 6.5 C 19.5 4, 17 3.5, 15.5 4.5 C 14.5 5.2, 13.5 7, 12 7 C 10.5 7, 9.5 5.2, 8.5 4.5 Z"
+    d="M 8.5 4.3 C 7 3.3, 4.5 3.8, 3.5 6.4 C 2.5 9, 3 12, 3.5 14.5 C 3.8 16.6, 4.6 21, 6.4 21 C 8.2 21, 8.8 17.8, 12 17.4 C 15.2 17.8, 15.8 21, 17.6 21 C 19.4 21, 20.2 16.6, 20.5 14.5 C 21 12, 21.5 9, 20.5 6.4 C 19.5 3.8, 17 3.3, 15.5 4.3 C 14.5 5, 13.5 6.8, 12 6.8 C 10.5 6.8, 9.5 5, 8.5 4.3 Z"
     fill="url(#g)"
-    fill-opacity="0.10"
+    fill-opacity="0.12"
     stroke="url(#g)"
-    stroke-width="1.5"
+    stroke-width="1.6"
     stroke-linejoin="round"
   />
-  <path
-    d="M 7 6.5 C 6.5 5.2, 7.2 4.3, 8.5 4.8"
-    stroke="url(#hi)"
-    stroke-width="1"
-    stroke-linecap="round"
-  />
+  <g clip-path="url(#c)" stroke="#7c83f0" stroke-width="1" stroke-opacity="0.6" stroke-linecap="round">
+    <line x1="2" y1="9" x2="22" y2="9"/>
+    <line x1="2" y1="11.5" x2="22" y2="11.5"/>
+    <line x1="2" y1="14" x2="22" y2="14"/>
+  </g>
 </svg>
