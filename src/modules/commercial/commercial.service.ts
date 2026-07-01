@@ -2,16 +2,15 @@ import api from '@/lib/api'
 import type { Deal, DealDetail } from '@/types/models'
 import type { PaymentMethod } from '@/types/enums'
 
-export interface DealProcedureInput {
-  name: string
-  code?: string
-  tableValue: number
+export interface DealItemInput {
+  procedureId: string
+  priceOverride?: number
   quantity: number
   note?: string
 }
 
 export interface DealCreateDTO {
-  procedures: DealProcedureInput[]
+  items: DealItemInput[]
 }
 
 export interface ApplyDiscountDTO {

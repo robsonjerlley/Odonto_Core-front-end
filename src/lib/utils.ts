@@ -15,3 +15,19 @@ export function nowBrasiliaISO(): string {
     .toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' })
     .replace(' ', 'T')
 }
+
+/** Data de hoje em Brasília no formato "YYYY-MM-DD". */
+export function todayBrasiliaISO(): string {
+  return new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })
+}
+
+const currencyFormatter = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+})
+
+/** Formata um valor numérico em reais (BRL). `null`/`undefined` → "—". */
+export function formatCurrency(value: number | undefined | null): string {
+  if (value == null) return '—'
+  return currencyFormatter.format(value)
+}

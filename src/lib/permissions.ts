@@ -15,6 +15,8 @@ export type Resource =
   | 'TICKET'
   | 'CONTACT_LOG'
   | 'DEAL'
+  | 'APPOINTMENT'
+  | 'INSTALLMENT'
   | 'ANALYTICS'
   | 'CONFIG'
 
@@ -36,6 +38,8 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'TICKET:CREATE', 'TICKET:READ', 'TICKET:UPDATE', 'TICKET:RECYCLE',
     'CONTACT_LOG:CREATE', 'CONTACT_LOG:READ',
     'DEAL:CREATE', 'DEAL:READ', 'DEAL:UPDATE', 'DEAL:CLOSE',
+    'APPOINTMENT:READ', 'APPOINTMENT:UPDATE',
+    'INSTALLMENT:READ', 'INSTALLMENT:UPDATE',
     'ANALYTICS:READ',
     'CONFIG:CONFIGURE',
   ],
@@ -58,6 +62,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'CUSTOMER:CREATE', 'CUSTOMER:READ', 'CUSTOMER:UPDATE',
     'TICKET:READ', 'TICKET:UPDATE',
     'CONTACT_LOG:CREATE', 'CONTACT_LOG:READ',
+    'APPOINTMENT:READ', 'APPOINTMENT:UPDATE',
     // ANALYTICS:READ do atendente é escopo OWN (só métricas pessoais). O Overview
     // global continua restrito ao ADM_SYSTEM; o atendente acessa a view pessoal
     // `/meu-desempenho` (ver ANALYTICS_SCOPE e canAccessRoute).
@@ -69,6 +74,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'DEAL:CREATE', 'DEAL:READ', 'DEAL:UPDATE',
     'TICKET:READ', 'TICKET:UPDATE',
     'CONTACT_LOG:READ',
+    'APPOINTMENT:READ', 'APPOINTMENT:UPDATE',
     'ANALYTICS:READ', // escopo SECTOR — métricas do setor + pessoais
   ],
 
@@ -77,6 +83,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'DEAL:CREATE', 'DEAL:READ', 'DEAL:UPDATE',
     'TICKET:READ', 'TICKET:UPDATE',
     'CONTACT_LOG:READ',
+    'APPOINTMENT:READ', 'APPOINTMENT:UPDATE',
     'ANALYTICS:READ', // escopo OWN — métricas pessoais via /meu-desempenho
   ],
 
@@ -85,6 +92,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'TICKET:READ', 'TICKET:UPDATE', 'TICKET:CLOSE',
     'CUSTOMER:READ',
     'CONTACT_LOG:READ',
+    'INSTALLMENT:READ', 'INSTALLMENT:UPDATE',
     'ANALYTICS:READ', // escopo SECTOR — métricas do setor + pessoais
   ],
 
@@ -93,6 +101,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'TICKET:READ', 'TICKET:UPDATE', 'TICKET:CLOSE',
     'CUSTOMER:READ',
     'CONTACT_LOG:READ',
+    'INSTALLMENT:READ', 'INSTALLMENT:UPDATE',
     'ANALYTICS:READ', // escopo OWN — métricas pessoais via /meu-desempenho
   ],
 }
@@ -143,12 +152,15 @@ export function analyticsScope(role: Role | undefined | null): AnalyticsScope | 
  */
 export const ROUTE_PERMISSION = {
   '/analytics':   { resource: 'ANALYTICS', action: 'READ' },
-  '/funnel':      { resource: 'TICKET',    action: 'READ' },
-  '/customers':   { resource: 'CUSTOMER',  action: 'READ' },
-  '/avaliacoes':  { resource: 'DEAL',      action: 'CREATE' },
-  '/commercial':  { resource: 'DEAL',      action: 'READ' },
+  '/funnel':      { resource: 'TICKET',      action: 'READ' },
+  '/customers':   { resource: 'CUSTOMER',    action: 'READ' },
+  '/agenda':      { resource: 'APPOINTMENT', action: 'READ' },
+  '/avaliacoes':  { resource: 'DEAL',        action: 'CREATE' },
+  '/commercial':  { resource: 'DEAL',        action: 'READ' },
+  '/financeiro':  { resource: 'INSTALLMENT', action: 'READ' },
   '/users':       { resource: 'USER',      action: 'READ' },
   '/config':      { resource: 'CONFIG',    action: 'CONFIGURE' },
+  '/procedimentos': { resource: 'CONFIG',  action: 'CONFIGURE' },
 } as const satisfies Record<string, { resource: Resource; action: Action }>
 
 export type AppRoute = '/' | '/meu-desempenho' | '/analytics-setor' | keyof typeof ROUTE_PERMISSION

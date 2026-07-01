@@ -7,12 +7,15 @@ import HomePage from '@/modules/home/HomePage'
 import UserListPage from '@/modules/identity/UserListPage'
 import CustomerListPage from '@/modules/funnel/CustomerListPage'
 import TicketKanbanPage from '@/modules/funnel/TicketKanbanPage'
+import AgendaPage from '@/modules/appointment/AgendaPage'
 import EvaluationsPage from '@/modules/evaluations/EvaluationsPage'
 import DealsPage from '@/modules/commercial/DealsPage'
+import InstallmentsPage from '@/modules/financial/InstallmentsPage'
 import DashboardPage from '@/modules/analytics/DashboardPage'
 import SectorAnalyticsPage from '@/modules/analytics/SectorAnalyticsPage'
 import MyPerformancePage from '@/modules/analytics/MyPerformancePage'
 import ConfigPage from '@/modules/config/ConfigPage'
+import ProceduresPage from '@/modules/catalog/ProceduresPage'
 
 export const router = createBrowserRouter([
   {
@@ -51,6 +54,10 @@ export const router = createBrowserRouter([
             children: [{ path: 'customers', element: <CustomerListPage /> }],
           },
           {
+            element: <RequireRoute path="/agenda" />,
+            children: [{ path: 'agenda', element: <AgendaPage /> }],
+          },
+          {
             element: <RequireRoute path="/avaliacoes" />,
             children: [{ path: 'avaliacoes', element: <EvaluationsPage /> }],
           },
@@ -59,12 +66,20 @@ export const router = createBrowserRouter([
             children: [{ path: 'commercial', element: <DealsPage /> }],
           },
           {
+            element: <RequireRoute path="/financeiro" />,
+            children: [{ path: 'financeiro', element: <InstallmentsPage /> }],
+          },
+          {
             element: <RequireRoute path="/users" />,
             children: [{ path: 'users', element: <UserListPage /> }],
           },
           {
             element: <RequireRoute path="/config" />,
             children: [{ path: 'config', element: <ConfigPage /> }],
+          },
+          {
+            element: <RequireRoute path="/procedimentos" />,
+            children: [{ path: 'procedimentos', element: <ProceduresPage /> }],
           },
         ],
       },

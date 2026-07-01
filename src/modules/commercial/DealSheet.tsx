@@ -28,7 +28,8 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { usePermission } from '@/hooks/usePermission'
-import type { LeadTicket, Customer, Deal, DealHistory } from '@/types/models'
+import { useProcedures } from '@/modules/catalog/procedure.queries'
+import type { LeadTicket, Customer, Deal, DealHistory, Procedure } from '@/types/models'
 
 function currency(value: number | undefined | null): string {
   if (value == null) return '—'
@@ -49,7 +50,14 @@ function EditProceduresDialog({ deal, ticketId, open, onOpenChange }: EditProced
 
   const form = useForm<DealFormInput, unknown, DealFormData>({
     resolver: zodResolver(dealFormSchema),
-    defaultValues: { procedures: deal.procedures },
+    defaultValues: {
+      items: deal.items.map((it) => ({
+        procedureId: it.procedureId,
+        priceOverride: it.priceOverride,
+        quantity: it.quantity,
+        note: it.note ?? '',
+      })),
+    },
   })
 
   async function onSubmit(data: DealFormData) {
@@ -349,8 +357,12 @@ export default function DealSheet({ ticket, customer, open, onOpenChange }: Deal
 
   const createForm = useForm<DealFormInput, unknown, DealFormData>({
     resolver: zodResolver(dealFormSchema),
-    defaultValues: { procedures: [{ name: '', code: '', tableValue: 0, quantity: 1, note: '' }] },
+    defaultValues: { items: [{ procedureId: '', priceOverride: undefined, quantity: 1, note: '' }] },
   })
+
+  // Catálogo para resolver nome/preço dos itens (o response só traz procedureId).
+  const { data: procedures = [] } = useProcedures()
+  const procMap = new Map<string, Procedure>(procedures.map((p) => [p.id, p]))
 
   async function handleCreate(data: DealFormData) {
     try {
@@ -435,23 +447,32 @@ export default function DealSheet({ ticket, customer, open, onOpenChange }: Deal
                         <tr>
                           <th className="text-left p-2 font-medium">Procedimento</th>
                           <th className="text-right p-2 font-medium">Qtd</th>
-                          <th className="text-right p-2 font-medium">Vlr. Tab.</th>
+                          <th className="text-right p-2 font-medium">Vlr. Unit.</th>
                           <th className="text-right p-2 font-medium">Total</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {deal.procedures.map((p, i) => (
-                          <tr key={i} className="border-t">
-                            <td className="p-2">
-                              <p>{p.name}</p>
-                              {p.code && <p className="text-xs text-muted-foreground">{p.code}</p>}
-                              {p.note && <p className="text-xs text-muted-foreground italic">{p.note}</p>}
-                            </td>
-                            <td className="p-2 text-right">{p.quantity}</td>
-                            <td className="p-2 text-right">{currency(p.tableValue)}</td>
-                            <td className="p-2 text-right font-medium">{currency(p.tableValue * p.quantity)}</td>
-                          </tr>
-                        ))}
+                        {deal.items.map((it, i) => {
+                          const proc = procMap.get(it.procedureId)
+                          const unit = it.priceOverride ?? proc?.defaultPrice
+                          return (
+                            <tr key={i} className="border-t">
+                              <td className="p-2">
+                                <p>{proc?.name ?? '—'}</p>
+                                {proc?.code && <p className="text-xs text-muted-foreground">{proc.code}</p>}
+                                {it.priceOverride != null && (
+                                  <p className="text-xs text-amber-600">Preço ajustado</p>
+                                )}
+                                {it.note && <p className="text-xs text-muted-foreground italic">{it.note}</p>}
+                              </td>
+                              <td className="p-2 text-right">{it.quantity}</td>
+                              <td className="p-2 text-right">{currency(unit)}</td>
+                              <td className="p-2 text-right font-medium">
+                                {unit != null ? currency(unit * it.quantity) : '—'}
+                              </td>
+                            </tr>
+                          )
+                        })}
                       </tbody>
                       <tfoot className="border-t bg-muted/30">
                         <tr>

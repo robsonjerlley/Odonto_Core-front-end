@@ -1,7 +1,8 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   Home, LayoutDashboard, PieChart, Workflow, Users, Handshake,
-  UserCog, Settings, LogOut, LineChart, Moon, Sun, Stethoscope, type LucideIcon,
+  UserCog, Settings, LogOut, LineChart, Moon, Sun, Stethoscope,
+  CalendarDays, Wallet, ClipboardList, type LucideIcon,
 } from 'lucide-react'
 import { MolarIcon } from '@/components/icons/MolarIcon'
 import { useAuthStore } from '@/store/auth.store'
@@ -30,13 +31,16 @@ const MAIN_NAV: NavItem[] = [
   { to: '/meu-desempenho', label: NAV_LABELS.performance,    icon: LineChart,                   show: (r) => analyticsScope(r) === 'OWN',           textAccent: 'text-amber-600 dark:text-amber-400',  bgAccent: 'bg-amber-500' },
   { to: '/funnel',         label: NAV_LABELS.pipeline,       icon: Workflow,                    show: (r) => canAccessRoute(r, '/funnel'),          textAccent: 'text-blue-700 dark:text-blue-400',    bgAccent: 'bg-blue-600' },
   { to: '/customers',      label: NAV_LABELS.patients,       icon: Users,                       show: (r) => canAccessRoute(r, '/customers'),       textAccent: 'text-violet-600 dark:text-violet-400',bgAccent: 'bg-violet-600' },
+  { to: '/agenda',         label: NAV_LABELS.agenda,         icon: CalendarDays,                show: (r) => canAccessRoute(r, '/agenda'),          textAccent: 'text-orange-700 dark:text-orange-400',bgAccent: 'bg-orange-500' },
   { to: '/avaliacoes',     label: NAV_LABELS.evaluations,    icon: Stethoscope,                 show: (r) => canAccessRoute(r, '/avaliacoes'),      textAccent: 'text-orange-700 dark:text-orange-400',bgAccent: 'bg-orange-500' },
   { to: '/commercial',     label: NAV_LABELS.negotiations,   icon: Handshake,                   show: (r) => canAccessRoute(r, '/commercial'),      textAccent: 'text-emerald-600 dark:text-emerald-400', bgAccent: 'bg-emerald-600' },
+  { to: '/financeiro',     label: NAV_LABELS.financial,      icon: Wallet,                      show: (r) => canAccessRoute(r, '/financeiro'),      textAccent: 'text-amber-600 dark:text-amber-400',  bgAccent: 'bg-amber-500' },
 ]
 
 const ADMIN_NAV: NavItem[] = [
-  { to: '/users',  label: NAV_LABELS.team,     icon: UserCog,  show: (r) => canAccessRoute(r, '/users'),  textAccent: 'text-slate-600 dark:text-slate-400',  bgAccent: 'bg-slate-500' },
-  { to: '/config', label: NAV_LABELS.settings, icon: Settings, show: (r) => canAccessRoute(r, '/config'), textAccent: 'text-indigo-600 dark:text-indigo-400', bgAccent: 'bg-indigo-600' },
+  { to: '/users',         label: NAV_LABELS.team,       icon: UserCog,       show: (r) => canAccessRoute(r, '/users'),         textAccent: 'text-slate-600 dark:text-slate-400',  bgAccent: 'bg-slate-500' },
+  { to: '/procedimentos', label: NAV_LABELS.procedures, icon: ClipboardList, show: (r) => canAccessRoute(r, '/procedimentos'), textAccent: 'text-indigo-600 dark:text-indigo-400', bgAccent: 'bg-indigo-600' },
+  { to: '/config',        label: NAV_LABELS.settings,   icon: Settings,      show: (r) => canAccessRoute(r, '/config'),        textAccent: 'text-indigo-600 dark:text-indigo-400', bgAccent: 'bg-indigo-600' },
 ]
 
 function NavItemLink({ item }: { item: NavItem }) {

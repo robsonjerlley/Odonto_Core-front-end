@@ -114,7 +114,7 @@ function DealSection({ ticket }: DealSectionProps) {
 
   const form = useForm<DealFormInput, unknown, DealFormData>({
     resolver: zodResolver(dealFormSchema),
-    defaultValues: { procedures: [{ name: '', code: '', tableValue: 0, quantity: 1, note: '' }] },
+    defaultValues: { items: [{ procedureId: '', priceOverride: undefined, quantity: 1, note: '' }] },
   })
 
   if (!canRead || isLoading) return null
@@ -129,7 +129,7 @@ function DealSection({ ticket }: DealSectionProps) {
         <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
           <p>
             <span className="text-muted-foreground">Procedimentos:</span>{' '}
-            <span className="font-medium">{deal.procedures.length}</span>
+            <span className="font-medium">{deal.items.length}</span>
           </p>
           <p>
             <span className="text-muted-foreground">Total tabela:</span>{' '}
@@ -386,6 +386,7 @@ export default function TicketDetailSheet({ ticket, customer, open, onOpenChange
                       </label>
                       <Input
                         type="datetime-local"
+                        max="2099-12-31T23:59"
                         value={scheduleDate}
                         onChange={(e) => setScheduleDate(e.target.value)}
                       />

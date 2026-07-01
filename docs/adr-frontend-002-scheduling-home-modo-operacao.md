@@ -1,6 +1,6 @@
 # ADR-Frontend-002 — Scheduling: Home "Modo Operação" + Sheet "Agendar"
 
-**Status:** Proposto (decisões de UX aceitas; pendente implementação)
+**Status:** ✅ Implementado (2026-07-01) — Home Modo Operação (`OperationHome`), preferência tri-estado `homeMode` (`store/homeMode.store.ts`, persistida no navegador) e Sheet "Agendar" (`ScheduleSheet`, reusado na ADR-003). Ver "Estado da implementação" ao fim.
 **Data:** 2026-06-27
 **Autoria:** Carla (UI/UX Agent) + Robson
 **Relaciona:** Backend ADR-029 (módulo `scheduling`), ADR-023 (TicketWonEvent — promovido ao MVP)
@@ -32,7 +32,15 @@ Risco estratégico: a fatia de mercado de **clínicas pequenas** (1–2 pessoas)
 Home **adaptativa ao modo de operação**, não ao módulo:
 - Solo / papel amplo → **Home "Modo Operação"** (feed de ação).
 - Time → mantém o grid de cards atual.
-- **Sem toggle.** O perfil define a home; a sidebar segue dando acesso aos módulos para o detalhe.
+- **Sem toggle proeminente.** O perfil define a home; a sidebar segue dando acesso aos módulos para o detalhe.
+
+> ⚠️ **Revisão 2026-06-30 — a escolha da home deve ser REVERSÍVEL.** A detecção do "modo solo"
+> (item #10, §6) é heurística e pode errar. Escolha **irreversível** viola Nielsen #3 (controle e
+> liberdade) e #5 (prevenção de erro). **Decisão:** preferência tri-estado **`homeMode: AUTO |
+> OPERATION | CARDS`**, persistida por usuário, **default `AUTO`** (heurística escolhe); o usuário
+> sobrescreve e volta atrás. **"Reversível" ≠ "toggle proeminente"** — o controle mora de baixa
+> proeminência (configurações ou ícone sutil no header da home), preservando o anti-clutter.
+> **[IMPACTO BACKEND]** persistir preferência por usuário (endpoint novo) — resolve parcialmente o item #10.
 
 > A "Home Modo Operação" **não é um dashboard** (gráficos) nem um **módulo novo**. É uma tela que *consome* dados já existentes (funil, avaliações, deals) + os novos (agenda, a-agendar, status de pagamento) e os apresenta como **tarefas em ordem de ação**, com **micro-ações inline** para não navegar a cada item.
 
@@ -149,4 +157,20 @@ Calculado / feedback:
 
 1. Alinhar os **[IMPACTO BACKEND]** da seção 6 com o time de backend (contratos REST).
 2. Spec visual fina (tokens, breakpoints exatos, microcopy) quando os contratos fecharem.
-3. Implementar `TaskRow` + Home Modo Operação; depois o Sheet "Agendar".
+3. ~~Implementar `TaskRow` + Home Modo Operação; depois o Sheet "Agendar".~~ ✅
+
+## 9. Estado da implementação (2026-07-01)
+
+- **Home adaptativa:** `HomePage` resolve o modo via `resolveHomeMode(mode, role)` — `AUTO` escolhe
+  `OPERATION` para `ADM_SYSTEM` (dono-faz-tudo, único papel com acesso a agenda+financeiro no feed) e
+  `CARDS` para os demais. Seletor tri-estado de baixa proeminência no header da home (ícone → dropdown).
+- **`OperationHome`:** feed de coluna única com seções **Atrasado** (agendados do dia já vencidos),
+  **Hoje** (agendados futuros), **A agendar** (`AWAITING_SCHEDULE`) e **Pagamentos pendentes** (parcelas
+  `overdue`). Seção vazia não renderiza; estado "Tudo em dia ✨". Micro-ações inline (Concluir, Marcar pago);
+  Agendar abre o `ScheduleSheet`. Cada seção gateada por permissão (`APPOINTMENT:READ` / `INSTALLMENT:READ`).
+- **Sheet "Agendar" (`ScheduleSheet`):** snapshot read-only (paciente/procedimento/"Sessão X de N"), data/hora
+  obrigatória, executor (oculto se clínica solo), opt-in "Planejar N sessões de uma vez" (batch das sessões
+  irmãs do mesmo deal, intervalo em dias). Conflito = aviso via warnings do batch, não bloqueia.
+- **[IMPACTO BACKEND] não resolvidos:** persistência da preferência por-usuário (item #10) → hoje no
+  `localStorage`; `note` no agendamento não existe no `ScheduleRequestDTO` → removido do form; duração
+  estimada não existe no DTO → "Termina HH:MM" omitido.

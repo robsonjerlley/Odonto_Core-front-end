@@ -367,6 +367,25 @@ NEW → IN_CONTACT → SCHEDULED → IN_EVALUATION → NEGOTIATION → WIN → P
 - [x] View `/analytics-setor` (`SectorAnalyticsPage`) — escopo SECTOR para ADMs de setor (conversion + dropoff + performance pessoal)
 - [x] Analytics scope-aware: GLOBAL=ADM_SYSTEM → `/`; SECTOR=ADMs de setor → `/analytics-setor`; OWN=papéis USER → `/meu-desempenho`
 
+### Fase 7 — Agenda (Appointment) ✅ ADR-Frontend-003 (2026-07-01)
+- [x] Módulo `src/modules/appointment`: `appointment.service.ts`, `appointment.queries.ts`, `appointment.schema.ts`, `useExecutors.ts`, `AgendaPage.tsx`, `AppointmentRow.tsx`, `ScheduleSheet.tsx`
+- [x] Base `/api/v1/appointments`. `AppointmentResponseDTO` já traz `customerName`/`procedureName` (snapshot). Datas = `LocalDateTime` naïve (Brasília).
+- [x] `AgendaPage` (`/agenda`): segmented Agenda/A agendar + navegador de dia. Agenda do dia via `?assignedTo&from&to` (MVP solo: executor = usuário logado; multi-executor "Todos" depende de endpoint novo — furo [A1]).
+- [x] Ações: Concluir (`/complete`, 202 sem corpo → invalida query), Remarcar (`/reschedule`), Reatribuir (`/assignee`), Cancelar (`/cancel`, `cancelReason` obrigatório). Batch de sessões via `/schedule-batch` (opt-in no Sheet).
+
+### Fase 8 — Financeiro (Installment) ✅ ADR-Frontend-004 (2026-07-01)
+- [x] Módulo `src/modules/financial`: `installment.service.ts`, `installment.queries.ts`, `installment.schema.ts`, `InstallmentsPage.tsx`, `InstallmentRow.tsx`
+- [x] Base `/api/v1/installments`. Tela mês-a-mês (`?month=yyyy-MM&status?`), KPI strip (`/cashflow`), filtro Todos/A receber/Pago + chip "Só atrasados" (faceta client-side sobre `overdue`, furo [I1]).
+- [x] Pagar (`/pay` — aviso de pagamento parcial, furo [I3]), Estornar (`/unpay`, 200 sem corpo). Drawer de histórico por paciente (`?customerId`). Aba Fluxo de caixa (1 gráfico Recharts).
+
+### Home "Modo Operação" ✅ ADR-Frontend-002 (2026-07-01)
+- [x] `store/homeMode.store.ts`: preferência tri-estado `homeMode` (AUTO/OPERATION/CARDS), persistida no `localStorage` (endpoint por-usuário é [IMPACTO BACKEND] pendente). `resolveHomeMode`: AUTO → OPERATION só para `ADM_SYSTEM`.
+- [x] `OperationHome`: feed de seções (Atrasado / Hoje / A agendar / Pagamentos pendentes) consumindo agenda + parcelas; micro-ações inline; seletor de modo de baixa proeminência no header.
+- [x] `ScheduleSheet` compartilhado entre a home e a `AgendaPage`.
+
+### RBAC — novos recursos (2026-07-01)
+`permissions.ts` ganhou `APPOINTMENT` (READ/UPDATE → ADM_SYSTEM, USER_ATTENDANT, ADM_EVALUATOR, USER_EVALUATOR) e `INSTALLMENT` (READ/UPDATE → ADM_SYSTEM, ADM_COMMERCIAL, USER_COMMERCIAL), espelhando o `PermissionSeeder`. Rotas `/agenda` e `/financeiro` em `ROUTE_PERMISSION`; nav no `AppLayout`. O frontend só verifica capacidade; o escopo é aplicado no backend.
+
 ---
 
 ## Divergências conhecidas frontend ↔ backend

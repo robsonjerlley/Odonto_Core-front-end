@@ -239,12 +239,13 @@ function BonusConfigCard() {
                 <FormItem>
                   <FormLabel>Meta (opcional)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
+                    <CurrencyInput
                       placeholder="Ex: 100.000,00"
-                      {...field}
-                      value={field.value != null ? String(field.value) : ''}
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      value={field.value as number | undefined}
+                      onChange={field.onChange}
                     />
                   </FormControl>
                   <FormMessage />

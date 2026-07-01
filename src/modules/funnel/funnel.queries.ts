@@ -30,6 +30,21 @@ export function useContactLogs(ticketId: string) {
   })
 }
 
+/** Logs de contato consolidados de todos os tickets de um cliente. */
+export function useCustomerContactLogs(customerId: string) {
+  return useQuery<ContactLog[]>({
+    queryKey: ['customer-contact-logs', customerId] as const,
+    queryFn: async () => {
+      const tickets = await funnelService.findTicketsByCustomer(customerId)
+      const logsByTicket = await Promise.all(
+        tickets.map((t) => funnelService.findContactLogsByTicket(t.id)),
+      )
+      return logsByTicket.flat()
+    },
+    enabled: !!customerId,
+  })
+}
+
 export function useCreateCustomer() {
   const qc = useQueryClient()
   return useMutation({

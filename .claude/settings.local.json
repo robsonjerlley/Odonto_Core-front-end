@@ -13,7 +13,20 @@
       "Bash(git push *)",
       "Read(//b/projects/odontocore.crm/odontocore.crm/**)",
       "Bash(npx eslint *)",
-      "Bash(echo \"EXIT: $?\")"
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(npx playwright *)",
+      "Bash(npx --yes playwright)",
+      "Bash(where chromium *)",
+      "Bash(where chrome *)",
+      "Read(//c/Program Files/Google/Chrome/Application/**)",
+      "Read(//c/Program Files \\(x86\\)/Microsoft/Edge/Application/**)",
+      "Read(//c/Program Files/Google/Chrome/Application//**)",
+      "Bash(npm install *)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill //PID 9104 //F)",
+      "Bash(cd /b/projects/odontocore.crm/odontocore.crm)",
+      "Bash(find . -iname \"*Appointment*Controller*\" -o -iname \"*Installment*Controller*\")",
+      "Bash(find . -iname \"AppointmentResponseDTO*\" -o -iname \"InstallmentResponseDTO*\" -o -iname \"CashflowMonthDTO*\" -o -iname \"ConflictWarning*\")"
     ]
   }
 }

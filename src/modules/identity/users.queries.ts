@@ -8,10 +8,11 @@ import type { User } from '@/types/models'
 
 const USERS_KEY = 'users'
 
-export function useUsers() {
+export function useUsers(enabled = true) {
     return useQuery<User[]>({
         queryKey: [USERS_KEY],
         queryFn: usersService.findAll,
+        enabled,
     })
 }
 

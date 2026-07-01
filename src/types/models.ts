@@ -1,7 +1,8 @@
 import type {
     Role, Sector,
     TicketStatus, AdsChannel,
-    ContactChannel, CustomerSource, PaymentMethod
+    ContactChannel, CustomerSource, PaymentMethod,
+    AppointmentStatus, AppointmentType, PaymentStatus
 } from './enums'
 
 export interface DataRangeDTO {
@@ -84,10 +85,27 @@ export interface ContactLog {
 
 // Commercial 
 
-export interface DealProcedure {
+/** Procedimento do catálogo (ProcedureResponseDTO). */
+export interface Procedure {
+    id: string
+    clinicId: string
     name: string
     code?: string
-    tableValue: number
+    active: boolean
+    defaultPrice: number
+    createdBy: string
+    createdAt: string
+    updatedAt: string
+}
+
+/**
+ * Item de um deal (DealResponseDTO.items = List<DealItemRequestDTO>).
+ * O response só traz `procedureId` — nome/preço são resolvidos pelo catálogo
+ * no frontend (ver DealSheet). `priceOverride` sobrescreve o `defaultPrice`.
+ */
+export interface DealItem {
+    procedureId: string
+    priceOverride?: number
     quantity: number
     note?: string
 }
@@ -97,7 +115,7 @@ export interface Deal {
     ticketId: string
     createdBy: string
     createdBySector: Sector
-    procedures: DealProcedure[]
+    items: DealItem[]
     totalValue: number
     discountPct?: number
     discountApprovedBy?: string
@@ -123,6 +141,61 @@ export interface DealHistory {
 export interface DealDetail {
     deal: Deal
     history: DealHistory[]
+}
+
+// Appointment (ADR-Frontend-003 / backend ADR-029)
+
+export interface Appointment {
+    id: string
+    clinicId: string
+    dealId: string
+    procedureId: string
+    procedureName: string        // nome pronto — snapshot do deal
+    type: AppointmentType
+    customerId: string
+    customerName: string         // nome pronto
+    evaluatorId: string
+    assignedTo: string           // executor efetivo
+    status: AppointmentStatus
+    scheduledAt: string | null   // ISO naïve (Brasília); null enquanto AWAITING_SCHEDULE
+    sessionIndex: number
+    plannedSessions: number
+    note: string | null
+    cancelReason: string | null
+}
+
+export interface ConflictWarning {
+    assignedTo: string
+    slot: string
+    appointmentIds: string[]
+}
+
+export interface BatchScheduleResult {
+    scheduled: Appointment[]
+    warnings: ConflictWarning[]
+}
+
+// Financial — Installment (ADR-Frontend-004 / backend ADR-032)
+
+export interface Installment {
+    id: string
+    dealId: string
+    customerId: string
+    customerName: string
+    sequence: number
+    totalInstallments: number
+    dueDate: string              // "YYYY-MM-DD"
+    expectedAmount: number
+    status: PaymentStatus
+    overdue: boolean             // derivado: vencida e ainda EXPECTED
+    paidAmount: number | null
+    paidAt: string | null        // "YYYY-MM-DD"
+}
+
+export interface CashflowMonth {
+    month: string                // "yyyy-MM"
+    recebido: number
+    aReceber: number
 }
 
 // Analytics

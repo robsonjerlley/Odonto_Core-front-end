@@ -97,7 +97,7 @@ export default function CreateTicketDialog({ open, onOpenChange }: CreateTicketD
               <FormItem>
                 <FormLabel>Agendamento (opcional)</FormLabel>
                 <FormControl>
-                  <Input type="datetime-local" {...field} />
+                  <Input type="datetime-local" max="2099-12-31T23:59" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

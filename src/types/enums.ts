@@ -62,6 +62,26 @@ export const CustomerSource = {
 } as const
 export type CustomerSource = typeof CustomerSource[keyof typeof CustomerSource]
 
+export const AppointmentStatus = {
+  AWAITING_SCHEDULE: 'AWAITING_SCHEDULE',
+  SCHEDULED:         'SCHEDULED',
+  DONE:              'DONE',
+  CANCELLED:         'CANCELLED',
+} as const
+export type AppointmentStatus = typeof AppointmentStatus[keyof typeof AppointmentStatus]
+
+export const AppointmentType = {
+  EVALUATION: 'EVALUATION',
+  PROCEDURE:  'PROCEDURE',
+} as const
+export type AppointmentType = typeof AppointmentType[keyof typeof AppointmentType]
+
+export const PaymentStatus = {
+  EXPECTED: 'EXPECTED',
+  PAID:     'PAID',
+} as const
+export type PaymentStatus = typeof PaymentStatus[keyof typeof PaymentStatus]
+
 export const PaymentMethod = {
   PIX:              'PIX',
   CASH:             'CASH',

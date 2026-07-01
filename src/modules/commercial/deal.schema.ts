@@ -1,16 +1,16 @@
 import { z } from 'zod'
 import { PaymentMethod } from '@/types/enums'
 
-export const procedureSchema = z.object({
-  name: z.string().min(1, 'Nome obrigatório'),
-  code: z.string().optional(),
-  tableValue: z.coerce.number().positive('Valor deve ser positivo'),
+export const dealItemSchema = z.object({
+  procedureId: z.string().min(1, 'Selecione o procedimento'),
+  // Sobrescreve o defaultPrice do catálogo; vazio = usa o padrão.
+  priceOverride: z.coerce.number().positive('Valor deve ser positivo').optional(),
   quantity: z.coerce.number().int().min(1, 'Mínimo 1'),
   note: z.string().optional(),
 })
 
 export const dealFormSchema = z.object({
-  procedures: z.array(procedureSchema).min(1, 'Adicione pelo menos um procedimento'),
+  items: z.array(dealItemSchema).min(1, 'Adicione pelo menos um procedimento'),
 })
 
 export const discountSchema = z.object({

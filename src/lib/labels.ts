@@ -1,4 +1,4 @@
-import type { Role, Sector, TicketStatus, AdsChannel, ContactChannel, CustomerSource, PaymentMethod } from '@/types/enums'
+import type { Role, Sector, TicketStatus, AdsChannel, ContactChannel, CustomerSource, PaymentMethod, AppointmentType, AppointmentStatus, PaymentStatus } from '@/types/enums'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EQUIPE — Cargos (Role)
@@ -131,6 +131,43 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// AGENDA — Tipo de atendimento (AppointmentType)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const APPOINTMENT_TYPE_LABELS: Record<AppointmentType, string> = {
+  EVALUATION: 'Avaliação',
+  PROCEDURE:  'Procedimento',
+}
+
+/** Cor por tipo — laranja=avaliação, esmeralda=procedimento (linguagem da ADR-030). */
+export const APPOINTMENT_TYPE_COLOR: Record<AppointmentType, string> = {
+  EVALUATION: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
+  PROCEDURE:  'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+}
+
+/** Ponto de cor (dot) por tipo, para a coluna da linha da agenda. */
+export const APPOINTMENT_TYPE_DOT: Record<AppointmentType, string> = {
+  EVALUATION: 'bg-orange-500',
+  PROCEDURE:  'bg-emerald-500',
+}
+
+export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
+  AWAITING_SCHEDULE: 'A agendar',
+  SCHEDULED:         'Agendado',
+  DONE:              'Concluído',
+  CANCELLED:         'Cancelado',
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FINANCEIRO — Status de pagamento (PaymentStatus)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
+  EXPECTED: 'A receber',
+  PAID:     'Pago',
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SETORES — Cores de badge (alinhadas à paleta de seção do sistema)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -154,10 +191,13 @@ export const NAV_LABELS = {
   sectorAnalytics: 'Analytics do Setor',
   pipeline:       'Pipeline',
   patients:      'Pacientes',
+  agenda:        'Agenda',
   evaluations:   'Avaliações',
   negotiations:  'Negociações',
+  financial:     'Financeiro',
   performance:   'Performance',
   settings:      'Configurações',
+  procedures:    'Procedimentos',
   team:          'Equipe',
   logout:        'Sair',
 } as const

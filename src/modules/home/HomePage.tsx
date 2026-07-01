@@ -2,14 +2,20 @@ import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
-  Workflow, Users, Stethoscope, Handshake,
+  Workflow, Users, Stethoscope, Handshake, CalendarDays, Wallet,
   LayoutDashboard, LineChart, UserCog, Settings,
-  ArrowRight, type LucideIcon,
+  ArrowRight, LayoutList, LayoutGrid, Wand2, Check, type LucideIcon,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { canAccessRoute, analyticsScope } from '@/lib/permissions'
 import { ROLE_LABELS } from '@/lib/labels'
 import type { Role } from '@/types/enums'
+import { useHomeModeStore, resolveHomeMode, type HomeMode } from '@/store/homeMode.store'
+import OperationHome from './OperationHome'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
 
 // ─── Configuração dos cards de acesso ────────────────────────────────────────
 
@@ -61,6 +67,15 @@ const SECTION_CARDS: SectionCard[] = [
     iconBg: 'bg-violet-100 dark:bg-violet-950/50',
   },
   {
+    to: '/agenda',
+    icon: CalendarDays,
+    title: 'Agenda',
+    description: 'Atendimentos do dia e o que ainda falta agendar. Conclua, remarque ou cancele.',
+    show: (r) => canAccessRoute(r, '/agenda'),
+    accent: 'text-orange-700 dark:text-orange-400',
+    iconBg: 'bg-orange-100 dark:bg-orange-950/50',
+  },
+  {
     to: '/avaliacoes',
     icon: Stethoscope,
     title: 'Avaliações',
@@ -77,6 +92,15 @@ const SECTION_CARDS: SectionCard[] = [
     show: (r) => canAccessRoute(r, '/commercial'),
     accent: 'text-emerald-600 dark:text-emerald-400',
     iconBg: 'bg-emerald-100 dark:bg-emerald-950/50',
+  },
+  {
+    to: '/financeiro',
+    icon: Wallet,
+    title: 'Financeiro',
+    description: 'Parcelas do mês, atrasados e fluxo de caixa. Marque recebimentos.',
+    show: (r) => canAccessRoute(r, '/financeiro'),
+    accent: 'text-amber-600 dark:text-amber-400',
+    iconBg: 'bg-amber-100 dark:bg-amber-950/50',
   },
   {
     to: '/meu-desempenho',
@@ -143,18 +167,47 @@ function SectionCardItem({ card }: { card: SectionCard }) {
   )
 }
 
-// ─── Página ───────────────────────────────────────────────────────────────────
+// ─── Seletor de modo de home (baixa proeminência — ADR-002 §3) ──────────────────
 
-export default function HomePage() {
+const MODE_OPTIONS: { value: HomeMode; label: string; icon: LucideIcon }[] = [
+  { value: 'AUTO', label: 'Automático', icon: Wand2 },
+  { value: 'OPERATION', label: 'Modo operação', icon: LayoutList },
+  { value: 'CARDS', label: 'Grade de atalhos', icon: LayoutGrid },
+]
+
+function HomeModeSwitch() {
+  const { mode, setMode } = useHomeModeStore()
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="size-8 text-muted-foreground" aria-label="Modo de exibição da home">
+          <LayoutList className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        {MODE_OPTIONS.map((opt) => {
+          const Icon = opt.icon
+          return (
+            <DropdownMenuItem key={opt.value} onSelect={() => setMode(opt.value)}>
+              <Icon /> {opt.label}
+              {mode === opt.value && <Check className="ml-auto size-3.5" />}
+            </DropdownMenuItem>
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+// ─── Grade de atalhos (home clássica de cards) ──────────────────────────────────
+
+function CardsHome({ role }: { role: Role | undefined | null }) {
   const user = useAuthStore((s) => s.user)
-  const role = user?.role
-
   const visibleCards = SECTION_CARDS.filter((c) => c.show(role))
   const today = format(new Date(), "EEEE',' dd 'de' MMMM", { locale: ptBR })
 
   return (
     <div className="p-8 max-w-4xl space-y-8">
-      {/* ── Saudação ── */}
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">
           {greeting()}, {firstName(user?.name)}
@@ -164,15 +217,12 @@ export default function HomePage() {
           {role && (
             <>
               <span className="text-muted-foreground/40">·</span>
-              <span className="text-xs font-medium text-muted-foreground">
-                {ROLE_LABELS[role]}
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">{ROLE_LABELS[role]}</span>
             </>
           )}
         </div>
       </div>
 
-      {/* ── Cards de acesso ── */}
       <div className="space-y-3">
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Suas áreas de trabalho
@@ -183,6 +233,23 @@ export default function HomePage() {
           ))}
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── Página ───────────────────────────────────────────────────────────────────
+
+export default function HomePage() {
+  const role = useAuthStore((s) => s.user?.role)
+  const mode = useHomeModeStore((s) => s.mode)
+  const effective = resolveHomeMode(mode, role)
+
+  return (
+    <div className="relative">
+      <div className="absolute right-3 top-3 z-10">
+        <HomeModeSwitch />
+      </div>
+      {effective === 'OPERATION' ? <OperationHome /> : <CardsHome role={role} />}
     </div>
   )
 }
