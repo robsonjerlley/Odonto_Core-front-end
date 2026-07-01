@@ -1,6 +1,6 @@
 # ADR-Frontend-004 — Tela Installment: Gestão de parcelas
 
-**Status:** Proposto (spec de UX pronta para implementação)
+**Status:** ✅ Implementado (2026-07-01) — módulo `src/modules/financial` (`InstallmentsPage`, `InstallmentRow`, service/queries). Rota `/financeiro`, nav e RBAC (`INSTALLMENT`) integrados. Ver "Estado da implementação" ao fim.
 **Data:** 2026-06-30
 **Autoria:** Carla (UI/UX Agent) + Robson
 **Relaciona:** ADR-032 (backend `financeiro` — parcelas via 2ª escuta do DealWonEvent), ADR-030 (feed "Pagamentos pendentes" = status, não módulo).
@@ -58,7 +58,7 @@ Dispositivo primário: **desktop** (revisão financeira sentado). Mobile = consu
 
 ### ⚠️ Furos [IMPACTO BACKEND] — LER ANTES DE DESENHAR O FILTRO
 - **[I1] "Atrasado" não é valor de enum, mas é filtrável.** `PaymentStatus` só tem `EXPECTED` e `PAID` — não existe `?status=OVERDUE`. Porém "atrasado" = `overdue` derivado (`EXPECTED AND dueDate < hoje`) **é** um predicado de query. **Dentro do mês:** faceta client-side (pedir `status=EXPECTED` e filtrar `overdue===true`) — as linhas do mês já estão na mão. **Cross-month:** vai ao servidor via `?overdue=true` (ver [I2]). O filtro de *status* segue Todos / A receber / Pago.
-- **[I2] DECIDIDO (pendente implementação backend) — atrasados cross-month via `?overdue=true`.** A listagem geral segue por `?month=yyyy-MM` (tela mês-a-mês). Para o feed "Pagamentos pendentes" da home (atrasados globais, ADR-030 §4.5) e o chip "Só atrasados" global, usar `GET /installments?overdue=true` (todos os meses, paginado, `dueDate ASC`). `month`+`overdue` juntos = 400. Contagem do chip = `page.totalElements`.
+- **[I2] IMPLEMENTADO no backend (2026-07-01) — atrasados cross-month via `?overdue=true`.** A listagem geral segue por `?month=yyyy-MM` (tela mês-a-mês). Para o feed "Pagamentos pendentes" da home (atrasados globais, ADR-030 §4.5) e o chip "Só atrasados" global, usar `GET /installments?overdue=true` (todos os meses, paginado, `dueDate ASC`). `month`+`overdue` juntos = 400. Contagem do chip = `page.totalElements`.
 - **[I3] FORA DO MVP — sem status parcial.** `/pay` grava `PAID` mesmo se `paidAmount < expectedAmount`. Não há estado "parcialmente pago". → Ver decisão §4 (MVP quita e avisa; suporte real é backend futuro).
 
 ## 3. Especificação da tela
@@ -135,4 +135,20 @@ Aba/segmento "Fluxo de caixa": mini-gráfico de barras `recebido` × `aReceber` 
 
 ## 5. Próximos passos
 1. Backend: implementar `?overdue=true` (Specification + validação mútua com `month`) — habilita o feed da home e o chip "Só atrasados" global.
-2. Implementar `InstallmentRow` + KPI strip + Sheet pagamento; drawer de histórico depois; cashflow por último.
+2. ~~Implementar `InstallmentRow` + KPI strip + Sheet pagamento; drawer de histórico; cashflow.~~ ✅
+
+## 6. Estado da implementação (2026-07-01)
+
+- **`InstallmentsPage`** (`/financeiro`): navegador de mês (‹ ›), abas **Parcelas** / **Fluxo de caixa**.
+  KPI strip: `Recebido`/`A receber` do `/cashflow?from=to=mês`; **Atrasado** = soma client-side de
+  `overdue` (sem total server-side, [I1]). Filtro segmented `Todos / A receber / Pago` → `status` ausente
+  / `EXPECTED` / `PAID`. Chip **"Só atrasados"** = faceta client-side sobre `overdue`.
+- **`InstallmentRow`:** paciente (clique → drawer de histórico `?customerId`), "Parcela X/N", vencimento,
+  valor, badge de status com texto (A receber / **Atrasado** vermelho / Pago + "pago em"). Ação
+  **Marcar pago** → dialog (valor recebido default = esperado + data; aviso de pagamento parcial [I3],
+  `/pay`); **Estornar** → confirmação destrutiva (`/unpay`, 200 sem corpo → refetch).
+- **Fluxo de caixa:** 1 gráfico de barras (recharts) `recebido × aReceber`, últimos 6 meses (`/cashflow`).
+- **Master-detail:** drawer lateral com todas as parcelas do paciente em modo leitura.
+- **[I2] `?overdue=true` cross-month não existe** → o feed da home lê `overdue` do mês corrente
+  (`?month&status=EXPECTED`), não global. **RBAC:** recurso `INSTALLMENT` (READ/UPDATE) para ADM_SYSTEM,
+  ADM_COMMERCIAL, USER_COMMERCIAL.
