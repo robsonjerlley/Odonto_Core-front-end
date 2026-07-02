@@ -5,61 +5,48 @@ interface MolarIconProps {
   className?: string
 }
 
-/** Contorno do molar (2 cúspides no topo, vale central, 2 raízes na base). */
+/** Silhueta do molar (2 raízes, sulco central) — arte da marca OdontoCore. */
 const TOOTH_PATH =
-  'M 8.5 4.3 C 7 3.3, 4.5 3.8, 3.5 6.4 C 2.5 9, 3 12, 3.5 14.5 ' +
-  'C 3.8 16.6, 4.6 21, 6.4 21 C 8.2 21, 8.8 17.8, 12 17.4 ' +
-  'C 15.2 17.8, 15.8 21, 17.6 21 C 19.4 21, 20.2 16.6, 20.5 14.5 ' +
-  'C 21 12, 21.5 9, 20.5 6.4 C 19.5 3.8, 17 3.3, 15.5 4.3 ' +
-  'C 14.5 5, 13.5 6.8, 12 6.8 C 10.5 6.8, 9.5 5, 8.5 4.3 Z'
+  'M352.155 511.914h-.043l-.319-.001c-10.349-.1-19.708-4.453-27.091-12.607-5.083-5.615-9.27-13.081-12.798-22.824-5.499-15.187-8.936-34.497-12.576-54.942-9.337-52.459-18.456-92.609-43.279-92.756-24.824.147-33.943 40.297-43.279 92.756-3.639 20.445-7.076 39.756-12.575 54.942-3.528 9.744-7.714 17.209-12.798 22.824-7.468 8.248-16.961 12.609-27.453 12.609-14.22 0-28.215-6.886-41.591-20.465-37.53-38.097-68.338-128.073-83.361-178.315C13.906 242.617-.479 170.555.012 137.895 1.153 61.907 63.732.086 139.512.086c37.487 0 65.235 15.818 87.532 28.527 15.853 9.036 29.599 16.871 42.596 16.871h.096C297.879 22.205 330.136.085 372.489.085c36.819.131 71.543 14.519 97.847 40.514 26.308 25.999 41.101 60.553 41.652 97.294.491 32.66-13.893 104.721-34.98 175.239-15.023 50.242-45.83 140.218-83.358 178.314-13.284 13.484-27.174 20.368-41.291 20.464a4.597 4.597 0 0 1-.204.004zM139.512 40.072c-54.06 0-98.704 44.152-99.519 98.423-.359 23.906 11.193 89.222 33.309 163.183 23.755 79.442 50.557 138.383 73.535 161.708 5.02 5.096 9.013 7.537 11.555 8.283 1.249-1.744 3.7-6.106 6.518-16.091 3.206-11.359 5.773-25.78 8.49-41.048 4.595-25.816 9.804-55.077 19.946-78.213 17.034-38.856 43.111-47.342 62.22-47.52l.342-.003h.277c.115 0 .229.001.342.003 19.111.178 45.186 8.664 62.22 47.519 10.143 23.136 15.351 52.397 19.946 78.213 2.718 15.268 5.284 29.689 8.491 41.048 2.805 9.94 5.247 14.307 6.501 16.067 2.545-.773 6.508-3.216 11.476-8.26 22.977-23.325 49.779-82.264 73.534-161.708 22.116-73.961 33.668-139.277 33.309-163.183-.812-54.078-45.488-98.23-99.59-98.423-35.099 0-62.476 23.465-91.46 48.307-31.53 27.024-64.133 54.969-109.476 54.969v-39.987c22.282 0 41.353-11.176 61.056-26.665-8.719-3.895-17.066-8.653-25.296-13.345-20.074-11.442-40.835-23.277-67.726-23.277z'
 
 /**
- * Ícone da marca OdontoCore — molar "blueprint" (contorno azul/violeta com
- * linhas horizontais internas). Sem texto/fundo; funciona em qualquer superfície.
+ * Ícone da marca OdontoCore — molar preenchido com gradiente violeta→teal.
+ * Sem texto/fundo; funciona em qualquer superfície.
  */
 export function MolarIcon({ size = 24, className }: MolarIconProps) {
   const uid = useId()
   const gradId = `molar-grad-${uid}`
-  const clipId = `molar-clip-${uid}`
 
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 24 24"
+      viewBox="0 0 512 512"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-hidden="true"
     >
       <defs>
-        {/* Gradiente da marca: indigo → violeta */}
-        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#6366f1" />
-          <stop offset="100%" stopColor="#8b5cf6" />
+        {/* Gradiente da marca: violeta → teal (flip vertical via gradientTransform) */}
+        <linearGradient
+          id={gradId}
+          x1="256.103"
+          x2="256.103"
+          y1="513.867"
+          y2="1.866"
+          gradientTransform="matrix(.9997 0 0 -.9997 -.017 513.78)"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0.294" stopColor="#6321be" />
+          <stop offset="0.367" stopColor="#29abd1" />
+          <stop offset="0.537" stopColor="#6321be" />
+          <stop offset="0.657" stopColor="#6321be" />
+          <stop offset="1" stopColor="#00cfc2" stopOpacity="0.69" />
         </linearGradient>
-        <clipPath id={clipId}>
-          <path d={TOOTH_PATH} />
-        </clipPath>
       </defs>
 
-      {/* Corpo do molar */}
-      <path
-        d={TOOTH_PATH}
-        fill={`url(#${gradId})`}
-        fillOpacity={0.1}
-        stroke={`url(#${gradId})`}
-        strokeWidth={1.4}
-        strokeLinejoin="round"
-      />
-
-      {/* Linhas horizontais internas (estilo blueprint), recortadas pelo dente */}
-      <g clipPath={`url(#${clipId})`} stroke="#7c83f0" strokeWidth={0.9} strokeOpacity={0.6} strokeLinecap="round">
-        <line x1="2" y1="9" x2="22" y2="9" />
-        <line x1="2" y1="11" x2="22" y2="11" />
-        <line x1="2" y1="13" x2="22" y2="13" />
-        <line x1="2" y1="15" x2="22" y2="15" />
-      </g>
+      <path d={TOOTH_PATH} fill={`url(#${gradId})`} />
     </svg>
   )
 }
