@@ -1,8 +1,9 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   Home, LayoutDashboard, PieChart, Workflow, Users, Handshake,
   UserCog, Settings, LogOut, LineChart, Moon, Sun, Stethoscope,
-  CalendarDays, Wallet, ClipboardList, type LucideIcon,
+  CalendarDays, Wallet, ClipboardList, Menu, X, type LucideIcon,
 } from 'lucide-react'
 import { MolarIcon } from '@/components/icons/MolarIcon'
 import { useAuthStore } from '@/store/auth.store'
@@ -43,12 +44,13 @@ const ADMIN_NAV: NavItem[] = [
   { to: '/config',        label: NAV_LABELS.settings,   icon: Settings,      show: (r) => canAccessRoute(r, '/config'),        textAccent: 'text-indigo-600 dark:text-indigo-400', bgAccent: 'bg-indigo-600' },
 ]
 
-function NavItemLink({ item }: { item: NavItem }) {
+function NavItemLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {
   const Icon = item.icon
   return (
     <NavLink
       to={item.to}
       end={item.end}
+      onClick={onNavigate}
       className={({ isActive }) =>
         `relative flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
           isActive
@@ -73,11 +75,32 @@ function NavItemLink({ item }: { item: NavItem }) {
 export default function AppLayout() {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
+  const location = useLocation()
   const role = user?.role
   const { dark, toggle: toggleDark } = useDarkMode()
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   const mainNav = MAIN_NAV.filter((item) => item.show(role))
   const adminNav = ADMIN_NAV.filter((item) => item.show(role))
+
+  // Fecha o drawer ao trocar de rota (navegação concluída).
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [location.pathname])
+
+  // Fecha com Esc e trava o scroll do body enquanto o drawer está aberto.
+  useEffect(() => {
+    if (!mobileOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
+  }, [mobileOpen])
 
   function handleLogout() {
     logout()
@@ -91,22 +114,46 @@ export default function AppLayout() {
     .join('')
     .toUpperCase()
 
+  const closeMobile = () => setMobileOpen(false)
+
   return (
     <div className="flex h-screen bg-background">
-      <aside className="flex w-60 flex-col border-r bg-sidebar">
+      {/* Backdrop do drawer — só no mobile, quando aberto */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          aria-hidden="true"
+          onClick={closeMobile}
+        />
+      )}
+
+      <aside
+        id="app-sidebar"
+        className={`fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r bg-sidebar transition-transform duration-300 ease-in-out lg:static lg:z-auto lg:translate-x-0 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         <div className="flex items-center gap-2 px-4 py-4">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand/10">
             <MolarIcon size={22} />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="font-semibold tracking-tight leading-tight">OdontoCore</p>
             <p className="text-[10px] leading-tight text-muted-foreground">by SertãoBit</p>
           </div>
+          <button
+            type="button"
+            className="flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
+            onClick={closeMobile}
+            aria-label="Fechar menu"
+          >
+            <X className="size-5" />
+          </button>
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-2">
           {mainNav.map((item) => (
-            <NavItemLink key={item.to} item={item} />
+            <NavItemLink key={item.to} item={item} onNavigate={closeMobile} />
           ))}
 
           {adminNav.length > 0 && (
@@ -115,7 +162,7 @@ export default function AppLayout() {
                 Administração
               </p>
               {adminNav.map((item) => (
-                <NavItemLink key={item.to} item={item} />
+                <NavItemLink key={item.to} item={item} onNavigate={closeMobile} />
               ))}
             </>
           )}
@@ -145,9 +192,31 @@ export default function AppLayout() {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
-        <Outlet />
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Top bar — só no mobile: abre o drawer */}
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-3 lg:hidden">
+          <button
+            type="button"
+            className="flex size-10 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Abrir menu"
+            aria-expanded={mobileOpen}
+            aria-controls="app-sidebar"
+          >
+            <Menu className="size-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand/10">
+              <MolarIcon size={18} />
+            </div>
+            <p className="font-semibold tracking-tight leading-tight">OdontoCore</p>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-auto">
+          <Outlet />
+        </main>
+      </div>
     </div>
   )
 }

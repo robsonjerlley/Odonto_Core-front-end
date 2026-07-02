@@ -73,7 +73,7 @@ export default function LoginPage() {
             <MolarIcon size={28} />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-xl tracking-tight">OdontoCore CRM</CardTitle>
+            <CardTitle className="text-xl tracking-tight">OdontoCore</CardTitle>
             <p className="text-sm text-muted-foreground">
               Entre com suas credenciais para acessar.
             </p>
